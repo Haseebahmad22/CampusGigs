@@ -1,0 +1,34 @@
+const express = require("express");
+const cors = require("cors");
+
+const env = require("./config/env");
+const authRoutes = require("./routes/auth");
+const errorHandler = require("./middleware/error-handler");
+const { query } = require("./db/pool");
+
+const app = express();
+
+app.use(
+  cors({
+    origin: env.corsOrigin,
+    credentials: true,
+  })
+);
+app.use(express.json());
+
+app.get("/api/health", async (req, res, next) => {
+  try {
+    await query("SELECT 1");
+    return res.status(200).json({ status: "ok", database: "connected" });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.use("/api/auth", authRoutes);
+
+app.use(errorHandler);
+
+app.listen(env.port, () => {
+  console.log(`Backend API running on http://localhost:${env.port}`);
+});

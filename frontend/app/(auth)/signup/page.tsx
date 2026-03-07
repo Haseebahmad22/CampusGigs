@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion, type Variants } from "framer-motion";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Eye, EyeOff, ArrowLeft, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +24,7 @@ const rowVariants: Variants = {
 const SIGNUP_IMAGE = "https://images.unsplash.com/photo-1571171637578-41bc2dd41cd2?w=1400&auto=format&fit=crop&q=80";
 
 export default function SignUpPage() {
+  const router = useRouter();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -38,11 +40,49 @@ export default function SignUpPage() {
     setError("");
     if (password.length < 8) { setError("Password must be at least 8 characters."); return; }
     if (password !== confirmPassword) { setError("Passwords do not match."); return; }
+
     setLoading(true);
-    // TODO: POST /api/auth/signup  { full_name, email, password, role } → session → /dashboard
-    await new Promise((r) => setTimeout(r, 900));
-    setLoading(false);
-    setSuccess(true);
+
+    try {
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+      const response = await fetch(`${apiBaseUrl}/api/auth/signup`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          fullName,
+          email,
+          password,
+        }),
+      });
+
+      const payload = await response.json();
+
+      if (!response.ok) {
+        setError(payload?.error || "Signup failed. Please try again.");
+        return;
+      }
+
+      if (payload?.token) {
+        localStorage.setItem("campusgigs_token", payload.token);
+      }
+
+      if (payload?.user) {
+        localStorage.setItem("campusgigs_user", JSON.stringify(payload.user));
+      }
+
+      localStorage.setItem("campusgigs_role", role);
+      setSuccess(true);
+
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 600);
+    } catch {
+      setError("Unable to connect to server. Check backend and try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (success) {

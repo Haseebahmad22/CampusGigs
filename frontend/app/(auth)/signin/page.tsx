@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion, type Variants } from "framer-motion";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,17 +20,53 @@ const rowVariants: Variants = {
 };
 
 export default function SignInPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    setError("");
     setLoading(true);
-    // TODO: POST /api/auth/signin  { email, password } → store session → redirect /dashboard
-    await new Promise((r) => setTimeout(r, 800));
-    setLoading(false);
+
+    try {
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+      const response = await fetch(`${apiBaseUrl}/api/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
+
+      const payload = await response.json();
+
+      if (!response.ok) {
+        setError(payload?.error || "Login failed. Please try again.");
+        return;
+      }
+
+      if (payload?.token) {
+        localStorage.setItem("campusgigs_token", payload.token);
+      }
+
+      if (payload?.user) {
+        localStorage.setItem("campusgigs_user", JSON.stringify(payload.user));
+      }
+
+      router.push("/dashboard");
+    } catch {
+      setError("Unable to connect to server. Check backend and try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -130,6 +167,16 @@ export default function SignInPage() {
                   Sign In
                 </Button>
               </motion.div>
+
+              {error && (
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-xs text-error px-1"
+                >
+                  {error}
+                </motion.p>
+              )}
             </form>
 
             <motion.p variants={rowVariants} className="text-center text-sm text-muted">
