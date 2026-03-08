@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Zap, Star, Clock, CheckCircle, TrendingUp, Coins, Search } from "lucide-react";
+import { LogoutButton } from "@/components/auth/LogoutButton";
 
 const availableGigs = [
   {
@@ -57,6 +58,7 @@ export default function FreelancerDashboard() {
                 180 tokens
               </span>
             </div>
+            <LogoutButton />
             <div className="w-9 h-9 rounded-full bg-secondary/15 border border-secondary/30 flex items-center justify-center text-secondary font-bold text-sm cursor-pointer select-none">
               F
             </div>

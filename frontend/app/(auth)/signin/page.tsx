@@ -59,6 +59,9 @@ export default function SignInPage() {
 
       if (payload?.user) {
         localStorage.setItem("campusgigs_user", JSON.stringify(payload.user));
+        if (payload.user.role) {
+          localStorage.setItem("campusgigs_role", payload.user.role);
+        }
       }
 
       router.push("/dashboard");

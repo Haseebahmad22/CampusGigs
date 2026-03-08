@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Briefcase, Plus, Clock, CheckCircle, Users, Coins } from "lucide-react";
+import { LogoutButton } from "@/components/auth/LogoutButton";
 
 const placeholderGigs = [
   {
@@ -60,6 +61,7 @@ export default function ClientDashboard() {
                 250 tokens
               </span>
             </div>
+            <LogoutButton />
             <div className="w-9 h-9 rounded-full bg-primary/15 border border-primary/30 flex items-center justify-center text-primary font-bold text-sm cursor-pointer select-none">
               C
             </div>

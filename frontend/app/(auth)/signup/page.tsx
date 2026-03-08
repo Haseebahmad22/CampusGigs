@@ -4,7 +4,7 @@ import { useState } from "react";
 import { motion, type Variants } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, ArrowLeft, CheckCircle } from "lucide-react";
+import { Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AuthVisualPanel } from "@/components/auth/AuthVisualPanel";
@@ -33,7 +33,6 @@ export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,6 +53,7 @@ export default function SignUpPage() {
           fullName,
           email,
           password,
+          role,
         }),
       });
 
@@ -64,62 +64,13 @@ export default function SignUpPage() {
         return;
       }
 
-      if (payload?.token) {
-        localStorage.setItem("campusgigs_token", payload.token);
-      }
-
-      if (payload?.user) {
-        localStorage.setItem("campusgigs_user", JSON.stringify(payload.user));
-      }
-
-      localStorage.setItem("campusgigs_role", role);
-      setSuccess(true);
-
-      setTimeout(() => {
-        router.push("/dashboard");
-      }, 600);
+      router.push("/signin");
     } catch {
       setError("Unable to connect to server. Check backend and try again.");
     } finally {
       setLoading(false);
     }
   };
-
-  if (success) {
-    return (
-      <div className="min-h-screen grid lg:grid-cols-2 bg-background">
-        <div className="flex items-center justify-center p-8 lg:p-14">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4 }}
-            className="w-full max-w-[380px] text-center space-y-5"
-          >
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", stiffness: 300, delay: 0.1 }}
-              className="w-14 h-14 rounded-full bg-success/10 border border-success/20 flex items-center justify-center mx-auto"
-            >
-              <CheckCircle className="w-7 h-7 text-success" />
-            </motion.div>
-            <div>
-              <h2 className="text-3xl text-foreground" style={{ fontFamily: "var(--font-display)" }}>
-                You&apos;re in.
-              </h2>
-              <p className="text-muted text-sm mt-2">
-                Auth will be fully connected once the backend is ready.
-              </p>
-            </div>
-            <Link href="/signin">
-              <Button variant="outline" size="lg" className="w-full">Back to Sign In</Button>
-            </Link>
-          </motion.div>
-        </div>
-        <AuthVisualPanel imageSrc={SIGNUP_IMAGE} />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen grid lg:grid-cols-2 bg-background">

@@ -7,7 +7,9 @@ const { jwtSecret } = require("../config/env");
 
 const router = express.Router();
 
-function validateSignupInput({ email, password, fullName }) {
+const allowedRoles = new Set(["client", "freelancer"]);
+
+function validateSignupInput({ email, password, fullName, role }) {
   if (!email || !password) {
     return "Email and password are required.";
   }
@@ -22,6 +24,10 @@ function validateSignupInput({ email, password, fullName }) {
 
   if (fullName && fullName.length > 100) {
     return "Full name must be at most 100 characters.";
+  }
+
+  if (!role || !allowedRoles.has(role)) {
+    return "Role must be either client or freelancer.";
   }
 
   return null;
@@ -41,8 +47,8 @@ function validateLoginInput({ email, password }) {
 
 router.post("/signup", async (req, res, next) => {
   try {
-    const { email, password, fullName } = req.body;
-    const validationError = validateSignupInput({ email, password, fullName });
+    const { email, password, fullName, role } = req.body;
+    const validationError = validateSignupInput({ email, password, fullName, role });
 
     if (validationError) {
       return res.status(400).json({ error: validationError });
@@ -58,25 +64,22 @@ router.post("/signup", async (req, res, next) => {
     const passwordHash = await bcrypt.hash(password, 12);
     const result = await query(
       `
-        INSERT INTO users (email, password_hash, full_name)
-        VALUES ($1, $2, $3)
-        RETURNING id, email, full_name, created_at
+        INSERT INTO users (email, password_hash, full_name, role)
+        VALUES ($1, $2, $3, $4)
+        RETURNING id, email, full_name, role, created_at
       `,
-      [normalizedEmail, passwordHash, fullName || null]
+      [normalizedEmail, passwordHash, fullName || null, role]
     );
 
     const user = result.rows[0];
-    const token = jwt.sign({ sub: user.id, email: user.email }, jwtSecret, {
-      expiresIn: "7d",
-    });
 
     return res.status(201).json({
-      message: "Signup successful.",
-      token,
+      message: "Signup successful. Please sign in to continue.",
       user: {
         id: user.id,
         email: user.email,
         fullName: user.full_name,
+        role: user.role,
         createdAt: user.created_at,
       },
     });
@@ -96,7 +99,7 @@ router.post("/login", async (req, res, next) => {
 
     const normalizedEmail = email.toLowerCase().trim();
     const result = await query(
-      "SELECT id, email, full_name, password_hash, created_at FROM users WHERE email = $1",
+      "SELECT id, email, full_name, role, password_hash, created_at FROM users WHERE email = $1",
       [normalizedEmail]
     );
 
@@ -111,7 +114,7 @@ router.post("/login", async (req, res, next) => {
       return res.status(401).json({ error: "Invalid email or password." });
     }
 
-    const token = jwt.sign({ sub: user.id, email: user.email }, jwtSecret, {
+    const token = jwt.sign({ sub: user.id, email: user.email, role: user.role }, jwtSecret, {
       expiresIn: "7d",
     });
 
@@ -122,6 +125,7 @@ router.post("/login", async (req, res, next) => {
         id: user.id,
         email: user.email,
         fullName: user.full_name,
+        role: user.role,
         createdAt: user.created_at,
       },
     });

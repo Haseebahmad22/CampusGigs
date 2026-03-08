@@ -1,9 +1,29 @@
-import { redirect } from "next/navigation";
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
-// TODO: Read role from session/cookie once auth is implemented, then redirect accordingly.
-// For now defaults to /freelancer as placeholder.
 export default function DashboardPage() {
-  redirect("/freelancer");
+  const router = useRouter();
+
+  useEffect(() => {
+    const token = localStorage.getItem("campusgigs_token");
+    const role = localStorage.getItem("campusgigs_role");
+
+    if (!token) {
+      router.replace("/signin");
+      return;
+    }
+
+    if (role === "client") {
+      router.replace("/client");
+      return;
+    }
+
+    router.replace("/freelancer");
+  }, [router]);
+
+  return null;
 }
