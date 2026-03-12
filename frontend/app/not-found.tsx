@@ -2,7 +2,6 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { Briefcase } from "lucide-react";
 
 export default function NotFound() {
   return (
@@ -119,14 +118,14 @@ export default function NotFound() {
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="flex items-center gap-2.5"
         >
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <Briefcase className="w-4 h-4 text-white" />
-          </div>
-          <span className="text-base font-semibold text-foreground tracking-tight">
+          <Link
+            href="/"
+            className="text-[19px] text-white italic"
+            style={{ fontFamily: "var(--font-logo)" }}
+          >
             CampusGigs
-          </span>
+          </Link>
         </motion.div>
 
         {/* Main content */}
