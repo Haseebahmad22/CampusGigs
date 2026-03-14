@@ -9,6 +9,12 @@ export interface InputProps
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, type, error, icon, ...props }, ref) => {
+    const inputProps: React.InputHTMLAttributes<HTMLInputElement> = { ...props };
+
+    if (Object.prototype.hasOwnProperty.call(props, "value")) {
+      inputProps.value = props.value ?? "";
+    }
+
     return (
       <div className="relative w-full">
         {icon && (
@@ -29,7 +35,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             className
           )}
           ref={ref}
-          {...props}
+          {...inputProps}
         />
         {error && (
           <p className="mt-1.5 text-xs text-error">{error}</p>

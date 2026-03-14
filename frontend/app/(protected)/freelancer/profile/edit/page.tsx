@@ -23,8 +23,6 @@ import { SkillsSelector } from "@/components/profile/SkillsSelector";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { getCurrentUserProfile } from "@/lib/data/dummy-profiles";
 import type { FreelancerProfile, FreelancerSkill, AvailabilityStatus } from "@/lib/types";
 
 const containerVariants = {
@@ -71,14 +69,47 @@ export default function EditProfilePage() {
   const [profile, setProfile] = useState<FreelancerProfile | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [error, setError] = useState("");
   const [activeSection, setActiveSection] = useState<Section>("basic");
   const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false);
   const [semesterOpen, setSemesterOpen] = useState(false);
 
   useEffect(() => {
-    const data = getCurrentUserProfile();
-    setProfile(data);
-  }, []);
+    const loadProfile = async () => {
+      const token = localStorage.getItem("campusgigs_token");
+
+      if (!token) {
+        router.replace("/signin");
+        return;
+      }
+
+      try {
+        setLoadingProfile(true);
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+        const response = await fetch(`${apiBaseUrl}/api/profile/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const payload = await response.json();
+
+        if (!response.ok) {
+          setError(payload?.error || "Unable to load your profile.");
+          return;
+        }
+
+        setProfile(payload as FreelancerProfile);
+      } catch {
+        setError("Unable to connect to backend. Please try again.");
+      } finally {
+        setLoadingProfile(false);
+      }
+    };
+
+    loadProfile();
+  }, [router]);
 
   const updateField = useCallback(
     <K extends keyof FreelancerProfile>(field: K, value: FreelancerProfile[K]) => {
@@ -90,12 +121,100 @@ export default function EditProfilePage() {
 
   const handleSave = useCallback(async () => {
     if (!profile) return;
+
+    const token = localStorage.getItem("campusgigs_token");
+    if (!token) {
+      router.replace("/signin");
+      return;
+    }
+
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+
     setSaving(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
-  }, [profile]);
+    setError("");
+
+    try {
+      const updateProfileRes = await fetch(`${apiBaseUrl}/api/profile/me`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          fullName: profile.fullName,
+          headline: profile.headline,
+          bio: profile.bio,
+          hourlyRate: profile.hourlyRate,
+          location: profile.location,
+          university: profile.university,
+          department: profile.department,
+          semester: profile.semester,
+          languages: profile.languages,
+          availability: profile.availability,
+        }),
+      });
+
+      const updatePayload = await updateProfileRes.json();
+
+      if (!updateProfileRes.ok) {
+        setError(updatePayload?.error || "Failed to save profile.");
+        return;
+      }
+
+      const avatarEndpoint = `${apiBaseUrl}/api/profile/me/avatar`;
+      if (profile.avatarUrl) {
+        await fetch(avatarEndpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ avatarUrl: profile.avatarUrl }),
+        });
+      } else {
+        await fetch(avatarEndpoint, {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+      }
+
+      if (profile.skills.length > 0) {
+        await fetch(`${apiBaseUrl}/api/profile/me/skills`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            skills: profile.skills.map((skill) => ({
+              skillId: skill.skillId,
+              proficiencyLevel: skill.proficiencyLevel,
+            })),
+          }),
+        });
+      }
+
+      const refreshed = await fetch(`${apiBaseUrl}/api/profile/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (refreshed.ok) {
+        const refreshedPayload = await refreshed.json();
+        setProfile(refreshedPayload as FreelancerProfile);
+      }
+
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch {
+      setError("Unable to save profile. Please check backend and try again.");
+    } finally {
+      setSaving(false);
+    }
+  }, [profile, router]);
 
   const toggleLanguage = useCallback(
     (lang: string) => {
@@ -125,10 +244,13 @@ export default function EditProfilePage() {
     )
     : 0;
 
-  if (!profile) {
+  if (loadingProfile || !profile) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+          {error && <p className="text-sm text-error">{error}</p>}
+        </div>
       </div>
     );
   }
@@ -189,6 +311,7 @@ export default function EditProfilePage() {
             <p className="text-muted mt-1 text-sm">
               Build your professional profile to attract clients
             </p>
+            {error && <p className="text-sm text-error mt-2">{error}</p>}
           </motion.div>
 
           <div className="flex flex-col lg:flex-row gap-6">

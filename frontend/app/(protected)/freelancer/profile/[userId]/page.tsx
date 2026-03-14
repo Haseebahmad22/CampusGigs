@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   MapPin,
@@ -20,12 +20,10 @@ import {
   Shield,
   ChevronDown,
   ChevronUp,
-  DollarSign,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AppNavbar } from "@/components/layout/AppNavbar";
 import { Button } from "@/components/ui/button";
-import { SAMPLE_FREELANCER, DUMMY_REVIEWS } from "@/lib/data/dummy-profiles";
 import type { FreelancerProfile, Review } from "@/lib/types";
 
 const containerVariants = {
@@ -73,31 +71,67 @@ function formatDateRange(dateStr: string) {
 
 export default function FreelancerPublicProfile() {
   const params = useParams();
-  const router = useRouter();
   const [profile, setProfile] = useState<FreelancerProfile | null>(null);
-  const [reviews] = useState<Review[]>(DUMMY_REVIEWS);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
   const [bioExpanded, setBioExpanded] = useState(false);
 
   useEffect(() => {
-    setTimeout(() => {
-      setProfile(SAMPLE_FREELANCER);
-      setLoading(false);
-    }, 300);
-  }, [params.userId]);
+    const loadData = async () => {
+      const userId = Array.isArray(params.userId) ? params.userId[0] : params.userId;
 
-  const avgReviewRating = useMemo(() => {
-    if (reviews.length === 0) return 0;
-    return reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
-  }, [reviews]);
+      if (!userId) {
+        setError("Missing freelancer id.");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+
+        const [profileRes, reviewsRes] = await Promise.all([
+          fetch(`${apiBaseUrl}/api/profile/${userId}`),
+          fetch(`${apiBaseUrl}/api/freelancers/${userId}/reviews`),
+        ]);
+
+        const profilePayload = await profileRes.json();
+        const reviewsPayload = await reviewsRes.json();
+
+        if (!profileRes.ok) {
+          setError(profilePayload?.error || "Unable to load freelancer profile.");
+          return;
+        }
+
+        setProfile(profilePayload as FreelancerProfile);
+
+        if (reviewsRes.ok && Array.isArray(reviewsPayload?.data)) {
+          const mappedReviews = reviewsPayload.data.map((review: Review) => ({
+            ...review,
+            gigTitle: review.gigTitle || "Completed Project",
+          }));
+          setReviews(mappedReviews);
+        } else {
+          setReviews([]);
+        }
+      } catch {
+        setError("Unable to connect to backend. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [params.userId]);
 
   if (loading || !profile) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="w-10 h-10 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-          <p className="text-sm text-muted">Loading profile...</p>
+          <p className="text-sm text-muted">{error || "Loading profile..."}</p>
         </div>
       </div>
     );

@@ -17,6 +17,7 @@ export default function ProtectedLayout({
   useEffect(() => {
     const token = localStorage.getItem("campusgigs_token");
     const role = localStorage.getItem("campusgigs_role");
+    const isPublicFreelancerProfileRoute = /^\/freelancer\/profile\/[^/]+$/.test(pathname);
 
     if (!token) {
       router.replace("/signin");
@@ -28,7 +29,11 @@ export default function ProtectedLayout({
       return;
     }
 
-    if (pathname.startsWith("/freelancer") && role === "client") {
+    if (
+      pathname.startsWith("/freelancer") &&
+      role === "client" &&
+      !isPublicFreelancerProfileRoute
+    ) {
       router.replace("/client");
       return;
     }
