@@ -137,7 +137,7 @@ export function AvatarUpload({
         )}
 
         {/* Overlay */}
-        <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+        <div className="absolute inset-0 rounded-full bg-foreground/35 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
           {uploading ? (
             <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
           ) : (
@@ -154,7 +154,7 @@ export function AvatarUpload({
               setPreview(null);
               onRemove();
             }}
-            className="absolute -top-1 -right-1 w-7 h-7 rounded-full bg-error/90 hover:bg-error flex items-center justify-center text-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+            className="absolute -top-1 -right-1 w-7 h-7 rounded-full bg-error hover:bg-error/90 flex items-center justify-center text-white shadow-[0_2px_10px_rgba(0,0,0,0.14)] opacity-0 group-hover:opacity-100 transition-opacity"
           >
             <X className="w-3.5 h-3.5" />
           </button>

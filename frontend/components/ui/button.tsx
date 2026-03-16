@@ -6,28 +6,28 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:pointer-events-none disabled:opacity-50 cursor-pointer active:scale-[0.98]",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-semibold transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 disabled:pointer-events-none disabled:opacity-50 cursor-pointer",
   {
     variants: {
       variant: {
         default:
-          "bg-primary text-white hover:bg-primary-dark shadow-lg shadow-primary/20",
+          "bg-primary text-white hover:bg-primary-dark border border-transparent",
         secondary:
-          "bg-secondary/10 text-secondary hover:bg-secondary/20 border border-secondary/25",
+          "border border-border bg-surface text-foreground hover:bg-surface-elevated",
         outline:
-          "border border-border bg-transparent hover:bg-surface-elevated text-foreground",
+          "border border-border bg-transparent text-foreground hover:bg-surface-elevated",
         ghost:
           "hover:bg-surface-elevated text-muted hover:text-foreground",
         accent:
-          "bg-accent text-background hover:bg-accent-light font-bold shadow-lg shadow-accent/20",
+          "bg-secondary text-white hover:bg-secondary-dark border border-transparent",
         danger:
-          "bg-error/10 text-error hover:bg-error/20 border border-error/25",
+          "bg-error/10 text-error hover:bg-error/20 border border-error/30",
       },
       size: {
-        sm: "h-9 px-4 text-xs rounded-lg",
+        sm: "h-9 px-4 text-xs",
         md: "h-11 px-6",
-        lg: "h-12 px-8 text-base rounded-2xl",
-        icon: "h-10 w-10 rounded-xl",
+        lg: "h-12 px-8 text-base",
+        icon: "h-10 w-10",
       },
     },
     defaultVariants: {

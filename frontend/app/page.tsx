@@ -2,56 +2,51 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, CheckCircle2 } from "lucide-react";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-
-      {/* ── Floating island navbar ── */}
-      <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2.5rem)] max-w-[920px]">
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2.5rem)] max-w-245">
         <nav
-          className="h-[64px] rounded-2xl flex items-center justify-between px-7 gap-6"
+          className="h-16 rounded-2xl flex items-center justify-between px-6 sm:px-7 gap-6"
           style={{
-            background: "rgba(12,12,21,0.70)",
-            backdropFilter: "blur(24px)",
-            WebkitBackdropFilter: "blur(24px)",
-            border: "1px solid rgba(255,255,255,0.08)",
-            boxShadow: "0 4px 30px rgba(0,0,0,0.4)",
+            background: "rgba(255,255,255,0.86)",
+            backdropFilter: "blur(10px)",
+            WebkitBackdropFilter: "blur(10px)",
+            border: "1px solid rgba(0,0,0,0.07)",
+            boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
           }}
         >
-          {/* Logo */}
           <Link
             href="/"
-            className="text-[19px] text-white shrink-0 italic"
+            className="text-[19px] text-foreground shrink-0 italic"
             style={{ fontFamily: "var(--font-logo)" }}
           >
             CampusGigs
           </Link>
 
-          {/* Center links */}
           <div className="hidden md:flex items-center gap-8">
             {["Browse Gigs", "How it Works", "Pricing"].map((label) => (
               <span
                 key={label}
-                className="text-[13.5px] text-white/45 hover:text-white/85 transition-colors cursor-pointer"
+                className="text-[13.5px] text-muted hover:text-foreground transition-colors cursor-pointer"
               >
                 {label}
               </span>
             ))}
           </div>
 
-          {/* Auth */}
-          <div className="flex items-center gap-5 shrink-0">
+          <div className="flex items-center gap-4 shrink-0">
             <Link
               href="/signin"
-              className="text-[13.5px] text-white/50 hover:text-white/85 transition-colors"
+              className="text-[13.5px] text-muted hover:text-foreground transition-colors"
             >
               Log in
             </Link>
             <Link
               href="/signup"
-              className="text-[13.5px] font-semibold bg-primary text-white px-5 py-2 rounded-xl hover:bg-primary-dark transition-colors"
+              className="text-[13.5px] font-semibold bg-primary text-white px-5 py-2 rounded-md hover:bg-primary-dark transition-colors"
             >
               Sign up
             </Link>
@@ -59,70 +54,102 @@ export default function Home() {
         </nav>
       </div>
 
-      {/* ── Hero ── */}
-      <main className="flex-1 flex flex-col items-center justify-center text-center px-6 relative overflow-hidden">
-        {/* Ambient orbs */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <motion.div
-            className="absolute top-[-15%] left-1/2 -translate-x-1/2 w-[700px] h-[500px] rounded-full"
-            style={{
-              background:
-                "radial-gradient(ellipse, rgba(139,92,246,0.22) 0%, transparent 70%)",
-            }}
-            animate={{ scale: [1, 1.08, 1] }}
-            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-          />
-          <motion.div
-            className="absolute bottom-0 right-[-5%] w-[400px] h-[400px] rounded-full"
-            style={{
-              background:
-                "radial-gradient(circle, rgba(34,211,238,0.12) 0%, transparent 70%)",
-            }}
-            animate={{ scale: [1, 1.15, 1] }}
-            transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-          />
-        </div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 28 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-          className="relative z-10 max-w-3xl space-y-6"
-        >
-          <h1
-            className="text-[3.8rem] sm:text-[5.5rem] leading-[1.05] text-foreground"
-            style={{ fontFamily: "var(--font-display)" }}
+      <main className="max-w-6xl mx-auto px-6 sm:px-8 pt-32 pb-16 sm:pt-36 sm:pb-20">
+        <div className="grid lg:grid-cols-[1.1fr_0.9fr] items-start gap-8 lg:gap-12">
+          <motion.section
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.55, ease: "easeOut" }}
+            className="space-y-6"
           >
-            Gigs for students,
-            <br />
-            <span className="bg-linear-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
-              by students.
+            <span className="inline-flex items-center px-3 py-1 rounded-full border border-border bg-surface text-xs text-muted tracking-wide uppercase">
+              Campus freelance marketplace
             </span>
-          </h1>
 
-          <p className="text-lg text-muted max-w-md mx-auto">
-            Post gigs, earn tokens, build your campus reputation.
-          </p>
+            <h1
+              className="text-[2.5rem] sm:text-[3.5rem] lg:text-[4.1rem] leading-[1.05]"
+              style={{ fontFamily: "var(--font-display)" }}
+            >
+              Trusted student talent,
+              <br />
+              ready for real work.
+            </h1>
 
-          <div className="flex items-center justify-center gap-3 pt-2">
-            <Link
-              href="/signup"
-              className="flex items-center gap-2 px-7 py-3.5 rounded-full bg-primary text-white font-medium text-sm hover:bg-primary-dark transition-all shadow-lg active:scale-[0.98]"
-            >
-              Get started
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-            <Link
-              href="/signin"
-              className="px-7 py-3.5 rounded-full border border-white/10 text-sm font-medium text-white/60 hover:text-white/90 hover:border-white/20 transition-all"
-            >
-              Log in
-            </Link>
-          </div>
-        </motion.div>
+            <p className="text-[1.03rem] text-muted max-w-xl leading-relaxed">
+              CampusGigs helps clients hire verified student freelancers and helps students build meaningful professional experience.
+            </p>
+
+            <div className="flex flex-wrap items-center gap-3 pt-1">
+              <Link
+                href="/signup"
+                className="flex items-center gap-2 px-6 py-3 rounded-md bg-primary text-white font-semibold text-sm hover:bg-primary-dark transition-colors"
+              >
+                Get Started
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+              <Link
+                href="/signin"
+                className="px-6 py-3 rounded-md border border-border bg-surface text-sm font-semibold text-foreground hover:bg-surface-elevated transition-colors"
+              >
+                Log in
+              </Link>
+            </div>
+
+            <div className="grid sm:grid-cols-3 gap-3 pt-5">
+              {[
+                "Verified student profiles",
+                "Transparent rates and reviews",
+                "Fast matching by skills",
+              ].map((item) => (
+                <div
+                  key={item}
+                  className="flex items-start gap-2.5 rounded-xl border border-border bg-surface px-3.5 py-3 shadow-[0_2px_12px_rgba(0,0,0,0.06)]"
+                >
+                  <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                  <p className="text-xs text-muted leading-relaxed">{item}</p>
+                </div>
+              ))}
+            </div>
+          </motion.section>
+
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
+            className="rounded-2xl border border-border bg-surface p-6 sm:p-7 shadow-[0_2px_12px_rgba(0,0,0,0.06)]"
+          >
+            <div className="space-y-5">
+              <div>
+                <p className="text-xs uppercase tracking-[0.12em] text-muted">Platform Snapshot</p>
+                <h2 className="text-2xl mt-2 font-semibold">Structured hiring, human experience.</h2>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { label: "Active freelancers", value: "2.4k+" },
+                  { label: "Jobs completed", value: "8.9k" },
+                  { label: "Avg response", value: "2.1h" },
+                  { label: "Repeat clients", value: "71%" },
+                ].map((stat) => (
+                  <div key={stat.label} className="rounded-xl border border-border bg-background px-4 py-3">
+                    <p className="text-xs text-muted">{stat.label}</p>
+                    <p className="text-xl font-semibold mt-1 text-foreground">{stat.value}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="rounded-xl border border-border bg-surface-elevated px-4 py-3.5">
+                <p className="text-xs text-muted">Why teams choose CampusGigs</p>
+                <p className="text-sm leading-relaxed text-foreground mt-1.5">
+                  Purpose-built for campus ecosystems with profile quality controls, focused search, and a clean workflow from discovery to delivery.
+                </p>
+              </div>
+            </div>
+          </motion.section>
+        </div>
       </main>
 
-      <footer className="py-6 text-center text-xs text-subtle relative z-10">
+      <footer className="py-6 text-center text-xs text-subtle border-t border-border/80">
         &copy; {new Date().getFullYear()} CampusGigs
       </footer>
     </div>

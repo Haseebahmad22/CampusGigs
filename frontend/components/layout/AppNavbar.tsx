@@ -51,21 +51,21 @@ export function AppNavbar() {
     .slice(0, 2) || "U";
 
   return (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-[960px]">
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-240">
       <nav
-        className="h-[56px] rounded-2xl flex items-center justify-between px-5 sm:px-6 gap-4"
+        className="h-14 rounded-2xl flex items-center justify-between px-5 sm:px-6 gap-4"
         style={{
-          background: "rgba(12,12,21,0.72)",
-          backdropFilter: "blur(24px)",
-          WebkitBackdropFilter: "blur(24px)",
-          border: "1px solid rgba(255,255,255,0.08)",
-          boxShadow: "0 4px 30px rgba(0,0,0,0.4)",
+          background: "rgba(255,255,255,0.85)",
+          backdropFilter: "blur(10px)",
+          WebkitBackdropFilter: "blur(10px)",
+          border: "1px solid rgba(0,0,0,0.07)",
+          boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
         }}
       >
         {/* Logo */}
         <Link
           href={base}
-          className="text-[17px] text-white shrink-0 italic"
+          className="text-[17px] text-foreground shrink-0 italic"
           style={{ fontFamily: "var(--font-logo)" }}
         >
           CampusGigs
@@ -81,8 +81,8 @@ export function AppNavbar() {
                 href={link.href}
                 className={`text-[13px] transition-colors ${
                   isActive
-                    ? "text-white/90 font-medium"
-                    : "text-white/40 hover:text-white/80"
+                    ? "text-foreground font-medium"
+                    : "text-muted hover:text-foreground"
                 }`}
               >
                 {link.label}
@@ -96,16 +96,16 @@ export function AppNavbar() {
           {/* Tokens */}
           <Link
             href={`${base}/tokens`}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.06] border border-white/[0.06] hover:bg-white/[0.1] transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-elevated border border-border hover:bg-[#e8e3d8] transition-colors"
           >
-            <Coins className="w-3.5 h-3.5 text-accent" />
-            <span className="text-xs font-semibold text-accent">180</span>
+            <Coins className="w-3.5 h-3.5 text-primary" />
+            <span className="text-xs font-semibold text-primary">180</span>
           </Link>
 
           {/* Sign out */}
           <button
             onClick={handleLogout}
-            className="flex items-center gap-1.5 text-[13px] text-white/40 hover:text-white/80 transition-colors"
+            className="flex items-center gap-1.5 text-[13px] text-muted hover:text-foreground transition-colors"
             title="Sign out"
           >
             <LogOut className="w-3.5 h-3.5" />

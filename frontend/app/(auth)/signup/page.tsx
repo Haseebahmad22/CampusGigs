@@ -81,12 +81,10 @@ export default function SignUpPage() {
         {/* Back to home */}
         <Link
           href="/"
-          className="absolute top-6 right-6 flex items-center gap-2 text-xs text-white/60 hover:text-white/90 transition-colors px-3.5 py-2 rounded-full"
+          className="absolute top-6 right-6 flex items-center gap-2 text-xs text-muted hover:text-foreground transition-colors px-3.5 py-2 rounded-md"
           style={{
-            background: "rgba(255,255,255,0.06)",
-            backdropFilter: "blur(12px)",
-            WebkitBackdropFilter: "blur(12px)",
-            border: "1px solid rgba(255,255,255,0.1)",
+            background: "rgba(255,255,255,0.9)",
+            border: "1px solid rgba(0,0,0,0.07)",
           }}
         >
           <ArrowLeft className="w-3 h-3" />
@@ -94,7 +92,7 @@ export default function SignUpPage() {
         </Link>
 
         <motion.div
-          className="w-full max-w-[380px] py-4"
+          className="w-full max-w-95 py-4"
           initial={{ opacity: 0, x: -24 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.55, ease: "easeOut" }}
@@ -193,7 +191,7 @@ export default function SignUpPage() {
                     className={`flex flex-col items-start gap-0.5 px-4 py-3.5 rounded-xl border text-left transition-all duration-200 ${
                       role === opt.value
                         ? "border-primary/50 bg-primary/10"
-                        : "border-border bg-surface hover:bg-surface-elevated"
+                        : "border-border bg-surface hover:bg-background"
                     }`}
                   >
                     <span className={`text-sm font-semibold ${role === opt.value ? "text-primary" : "text-foreground"}`}>

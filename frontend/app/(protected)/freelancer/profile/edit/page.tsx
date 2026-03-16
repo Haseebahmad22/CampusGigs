@@ -271,10 +271,10 @@ export default function EditProfilePage() {
         <div
           className="flex items-center gap-3 px-4 py-2.5 rounded-xl"
           style={{
-            background: "rgba(12,12,21,0.85)",
-            backdropFilter: "blur(20px)",
-            border: "1px solid rgba(255,255,255,0.08)",
-            boxShadow: "0 4px 24px rgba(0,0,0,0.5)",
+            background: "rgba(255,255,255,0.9)",
+            backdropFilter: "blur(8px)",
+            border: "1px solid rgba(0,0,0,0.07)",
+            boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
           }}
         >
           <Button
