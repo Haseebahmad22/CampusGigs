@@ -523,7 +523,7 @@ export default function EditProfilePage() {
                         </span>
                       </div>
                       <Textarea
-                        value={profile.bio}
+                        value={profile.bio ?? ""}
                         onChange={(e) => updateField("bio", e.target.value)}
                         placeholder="Describe yourself, your expertise, and what you bring to the table..."
                         rows={8}

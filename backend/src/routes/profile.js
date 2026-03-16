@@ -61,7 +61,7 @@ async function getSkillsByUserId(userId) {
     `
       SELECT
         fs.id,
-        fs.skill_id,
+        s.slug AS skill_slug,
         s.name AS skill_name,
         sc.name AS category_name,
         fs.proficiency_level
@@ -76,7 +76,7 @@ async function getSkillsByUserId(userId) {
 
   return result.rows.map((row) => ({
     id: row.id,
-    skillId: row.skill_id,
+    skillId: row.skill_slug,
     skillName: row.skill_name,
     categoryName: row.category_name,
     proficiencyLevel: row.proficiency_level,
@@ -249,14 +249,20 @@ router.post("/me/skills", auth, requireRole("freelancer"), async (req, res, next
     const validLevels = new Set(["beginner", "intermediate", "expert"]);
 
     for (const item of skills) {
-      const skillId = item && item.skillId;
+      const skillSlug = item && item.skillId;
       const proficiencyLevel = validLevels.has(item?.proficiencyLevel)
         ? item.proficiencyLevel
         : "intermediate";
 
-      if (!skillId) {
+      if (!skillSlug) {
         return res.status(400).json({ error: "Each skill must include skillId." });
       }
+
+      const skillLookup = await query("SELECT id FROM skills WHERE slug = $1", [skillSlug]);
+      if (!skillLookup.rows.length) {
+        return res.status(400).json({ error: `Skill not found: ${skillSlug}` });
+      }
+      const skillUuid = skillLookup.rows[0].id;
 
       await query(
         `
@@ -265,7 +271,7 @@ router.post("/me/skills", auth, requireRole("freelancer"), async (req, res, next
           ON CONFLICT (user_id, skill_id)
           DO UPDATE SET proficiency_level = EXCLUDED.proficiency_level
         `,
-        [req.user.id, skillId, proficiencyLevel]
+        [req.user.id, skillUuid, proficiencyLevel]
       );
     }
 
@@ -279,9 +285,13 @@ router.post("/me/skills", auth, requireRole("freelancer"), async (req, res, next
 router.delete("/me/skills/:skillId", auth, requireRole("freelancer"), async (req, res, next) => {
   try {
     const { skillId } = req.params;
+    const skillLookup = await query("SELECT id FROM skills WHERE slug = $1", [skillId]);
+    if (!skillLookup.rows.length) {
+      return res.status(404).json({ error: "Skill not found." });
+    }
     await query("DELETE FROM freelancer_skills WHERE user_id = $1 AND skill_id = $2", [
       req.user.id,
-      skillId,
+      skillLookup.rows[0].id,
     ]);
 
     return res.status(200).json({ message: "Skill removed successfully." });

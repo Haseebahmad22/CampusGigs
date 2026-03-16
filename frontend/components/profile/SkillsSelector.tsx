@@ -53,13 +53,13 @@ export function SkillsSelector({
       if (selectedIds.has(skillId)) {
         onSkillsChange(selectedSkills.filter((s) => s.skillId !== skillId));
       } else if (selectedSkills.length < maxSkills) {
-        const skill = ALL_SKILLS.find((s) => s.id === skillId);
+        const skill = ALL_SKILLS.find((s) => s.slug === skillId);
         if (!skill) return;
         onSkillsChange([
           ...selectedSkills,
           {
             id: `fs-${Date.now()}-${skillId}`,
-            skillId: skill.id,
+            skillId: skill.slug,
             skillName: skill.name,
             categoryName: skill.categoryName,
             proficiencyLevel: "intermediate",
@@ -193,12 +193,12 @@ export function SkillsSelector({
                 </div>
               ) : (
                 searchResults.map((skill, i) => {
-                  const isSelected = selectedIds.has(skill.id);
+                  const isSelected = selectedIds.has(skill.slug);
                   return (
                     <button
-                      key={skill.id}
+                      key={skill.slug}
                       type="button"
-                      onClick={() => toggleSkill(skill.id)}
+                      onClick={() => toggleSkill(skill.slug)}
                       disabled={!isSelected && selectedSkills.length >= maxSkills}
                       className={cn(
                         "w-full flex items-center justify-between px-4 py-2.5 text-left transition-colors",
@@ -233,7 +233,7 @@ export function SkillsSelector({
           {SKILL_CATEGORIES.map((category) => {
             const isExpanded = expandedCategories.has(category.id);
             const selectedInCategory = category.skills.filter((s) =>
-              selectedIds.has(s.id)
+              selectedIds.has(s.slug)
             ).length;
 
             return (
@@ -274,12 +274,12 @@ export function SkillsSelector({
                     >
                       <div className="px-3 pb-3 flex flex-wrap gap-1.5">
                         {category.skills.map((skill) => {
-                          const isSelected = selectedIds.has(skill.id);
+                          const isSelected = selectedIds.has(skill.slug);
                           return (
                             <button
-                              key={skill.id}
+                              key={skill.slug}
                               type="button"
-                              onClick={() => toggleSkill(skill.id)}
+                              onClick={() => toggleSkill(skill.slug)}
                               disabled={!isSelected && selectedSkills.length >= maxSkills}
                               className={cn(
                                 "px-3 py-1.5 rounded-full text-xs font-medium border transition-all",
