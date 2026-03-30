@@ -230,16 +230,16 @@ export default function EditProfilePage() {
   const completionPct = profile
     ? Math.round(
       ([
+        profile.fullName,
         profile.headline,
         profile.bio,
+        profile.hourlyRate !== null && profile.hourlyRate !== undefined,
         profile.avatarUrl,
         profile.location,
         profile.university,
-        profile.hourlyRate,
-        profile.languages.length > 0,
-        profile.skills.length > 0,
         profile.department,
         profile.semester,
+        profile.languages.length > 0,
       ].filter(Boolean).length / 10) * 100
     )
     : 0;

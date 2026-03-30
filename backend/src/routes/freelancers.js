@@ -205,6 +205,33 @@ router.get("/:userId", async (req, res, next) => {
   }
 });
 
+router.get("/:userId/active-gigs", async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+    const result = await query(
+      `
+        SELECT g.id, g.title, g.token_reward, g.status, g.created_at
+        FROM gigs g
+        WHERE g.freelancer_id = $1 AND g.status IN ('in_progress', 'pending_completion')
+        ORDER BY g.created_at DESC
+      `,
+      [userId]
+    );
+
+    const data = result.rows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      tokenReward: row.token_reward,
+      status: row.status,
+      createdAt: row.created_at,
+    }));
+
+    return res.status(200).json({ data });
+  } catch (error) {
+    return next(error);
+  }
+});
+
 router.get("/:userId/reviews", async (req, res, next) => {
   try {
     const { userId } = req.params;
@@ -216,10 +243,12 @@ router.get("/:userId/reviews", async (req, res, next) => {
           r.comment,
           r.created_at,
           c.full_name AS client_name,
-          fp.avatar_url AS client_avatar
+          fp.avatar_url AS client_avatar,
+          g.title AS gig_title
         FROM reviews r
         INNER JOIN users c ON c.id = r.client_id
         LEFT JOIN freelancer_profiles fp ON fp.user_id = c.id
+        LEFT JOIN gigs g ON g.id = r.gig_id
         WHERE r.freelancer_id = $1
         ORDER BY r.created_at DESC
       `,
@@ -243,7 +272,7 @@ router.get("/:userId/reviews", async (req, res, next) => {
       clientAvatar: row.client_avatar,
       rating: Number(row.rating),
       comment: row.comment,
-      gigTitle: null,
+      gigTitle: row.gig_title || null,
       createdAt: row.created_at,
     }));
 

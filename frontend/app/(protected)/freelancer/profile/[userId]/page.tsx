@@ -7,12 +7,9 @@ import {
   MapPin,
   GraduationCap,
   Star,
-  Clock,
   CheckCircle,
   TrendingUp,
-  MessageSquare,
-  Share2,
-  Heart,
+  Clock,
   Globe,
   Calendar,
   Award,
@@ -23,7 +20,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AppNavbar } from "@/components/layout/AppNavbar";
-import { Button } from "@/components/ui/button";
 import type { FreelancerProfile, Review } from "@/lib/types";
 
 const containerVariants = {
@@ -62,21 +58,19 @@ function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("en-US", { month: "short", year: "numeric" });
 }
 
-function formatDateRange(dateStr: string) {
-  const d = new Date(dateStr);
-  const end = new Date(d);
-  end.setDate(end.getDate() + Math.floor(Math.random() * 30) + 7);
-  return `${d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} - ${end.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
+function formatReviewDate(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 export default function FreelancerPublicProfile() {
   const params = useParams();
   const [profile, setProfile] = useState<FreelancerProfile | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [activeGigs, setActiveGigs] = useState<{ id: string; title: string; tokenReward: number; status: string; createdAt: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [saved, setSaved] = useState(false);
   const [bioExpanded, setBioExpanded] = useState(false);
+  const [workTab, setWorkTab] = useState<"completed" | "in_progress">("completed");
 
   useEffect(() => {
     const loadData = async () => {
@@ -92,13 +86,15 @@ export default function FreelancerPublicProfile() {
         setLoading(true);
         const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
-        const [profileRes, reviewsRes] = await Promise.all([
+        const [profileRes, reviewsRes, activeGigsRes] = await Promise.all([
           fetch(`${apiBaseUrl}/api/profile/${userId}`),
           fetch(`${apiBaseUrl}/api/freelancers/${userId}/reviews`),
+          fetch(`${apiBaseUrl}/api/freelancers/${userId}/active-gigs`),
         ]);
 
         const profilePayload = await profileRes.json();
         const reviewsPayload = await reviewsRes.json();
+        const activeGigsPayload = await activeGigsRes.json();
 
         if (!profileRes.ok) {
           setError(profilePayload?.error || "Unable to load freelancer profile.");
@@ -115,6 +111,10 @@ export default function FreelancerPublicProfile() {
           setReviews(mappedReviews);
         } else {
           setReviews([]);
+        }
+
+        if (activeGigsRes.ok && Array.isArray(activeGigsPayload?.data)) {
+          setActiveGigs(activeGigsPayload.data);
         }
       } catch {
         setError("Unable to connect to backend. Please try again.");
@@ -144,26 +144,6 @@ export default function FreelancerPublicProfile() {
   return (
     <div className="min-h-screen bg-background">
       <AppNavbar />
-
-      {/* Floating action bar */}
-      <div className="fixed bottom-4 right-6 z-40 flex items-center gap-2">
-        <button
-          onClick={() => setSaved(!saved)}
-          className={cn(
-            "w-10 h-10 rounded-lg flex items-center justify-center border transition-colors",
-            saved ? "bg-error/10 border-error/20" : "bg-surface border-border hover:border-primary/30"
-          )}
-          style={{ backdropFilter: "blur(12px)" }}
-        >
-          <Heart className={cn("w-4 h-4", saved ? "fill-error text-error" : "text-muted")} />
-        </button>
-        <button
-          className="w-10 h-10 rounded-lg bg-surface border border-border flex items-center justify-center hover:border-primary/30 transition-colors"
-          style={{ backdropFilter: "blur(12px)" }}
-        >
-          <Share2 className="w-4 h-4 text-muted" />
-        </button>
-      </div>
 
       <main className="max-w-6xl mx-auto px-5 pt-24 pb-16">
         <motion.div
@@ -204,14 +184,6 @@ export default function FreelancerPublicProfile() {
                     {profile.availability === "not_available" ? "Not Available" : profile.availability}
                   </span>
                 </div>
-                <div className="mt-4 space-y-2">
-                  <Button variant="default" size="md" className="w-full">
-                    <MessageSquare className="w-4 h-4 mr-2" />Hire Me
-                  </Button>
-                  <Button variant="outline" size="md" className="w-full">
-                    <Briefcase className="w-4 h-4 mr-2" />Invite to Gig
-                  </Button>
-                </div>
               </div>
             </div>
 
@@ -226,18 +198,6 @@ export default function FreelancerPublicProfile() {
                   <div className="h-px bg-border" />
                 </>
               )}
-              <div>
-                <p className="text-sm font-medium text-foreground">Hours per week</p>
-                <p className="text-xs text-muted mt-0.5">More than 20 hrs/week</p>
-              </div>
-              <div className="h-px bg-border" />
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-foreground">Avg. response</p>
-                  <p className="text-xs text-muted mt-0.5">Within 2 hours</p>
-                </div>
-                <Clock className="w-4 h-4 text-muted" />
-              </div>
               {profile.languages.length > 0 && (
                 <>
                   <div className="h-px bg-border" />
@@ -245,7 +205,7 @@ export default function FreelancerPublicProfile() {
                     <p className="text-sm font-medium text-foreground mb-1.5">Languages</p>
                     {profile.languages.map((lang) => (
                       <div key={lang} className="flex items-center gap-1.5 text-xs text-muted mb-0.5">
-                        <Globe className="w-3 h-3" />{lang}: <span className="text-foreground">Fluent</span>
+                        <Globe className="w-3 h-3" />{lang}
                       </div>
                     ))}
                   </div>
@@ -267,20 +227,6 @@ export default function FreelancerPublicProfile() {
                   </div>
                 </>
               )}
-              <div className="h-px bg-border" />
-              <div>
-                <p className="text-sm font-medium text-foreground mb-1.5">Verifications</p>
-                {profile.profileCompletionPct >= 80 && (
-                  <div className="flex items-center gap-1.5 text-xs mb-1">
-                    <Shield className="w-3.5 h-3.5 text-secondary" />
-                    <span className="text-muted">ID: <span className="text-secondary font-medium">Verified</span></span>
-                  </div>
-                )}
-                <div className="flex items-center gap-1.5 text-xs">
-                  <CheckCircle className="w-3.5 h-3.5 text-success" />
-                  <span className="text-muted">Email verified</span>
-                </div>
-              </div>
               <div className="h-px bg-border" />
               <div className="flex items-center gap-1.5 text-xs text-muted">
                 <Calendar className="w-3.5 h-3.5" />Member since {memberSince}
@@ -362,34 +308,65 @@ export default function FreelancerPublicProfile() {
               <div className="px-5 py-3.5 border-b border-border">
                 <h2 className="text-sm font-bold text-foreground">Work history</h2>
                 <div className="flex items-center gap-5 mt-2.5">
-                  <button className="text-sm font-medium text-foreground border-b-2 border-primary pb-2">
-                    Completed jobs ({reviews.length})
+                  <button
+                    onClick={() => setWorkTab("completed")}
+                    className={cn("text-sm font-medium pb-2 transition-colors", workTab === "completed" ? "text-foreground border-b-2 border-primary" : "text-muted hover:text-foreground")}
+                  >
+                    Completed ({reviews.length})
                   </button>
-                  <button className="text-sm font-medium text-muted pb-2 hover:text-foreground transition-colors">
-                    In progress (0)
+                  <button
+                    onClick={() => setWorkTab("in_progress")}
+                    className={cn("text-sm font-medium pb-2 transition-colors", workTab === "in_progress" ? "text-foreground border-b-2 border-primary" : "text-muted hover:text-foreground")}
+                  >
+                    In progress ({activeGigs.length})
                   </button>
                 </div>
               </div>
               <div className="divide-y divide-border/50">
-                {reviews.map((review) => (
-                  <div key={review.id} className="px-5 py-4">
-                    <h3 className="text-sm font-medium text-primary">{review.gigTitle}</h3>
-                    <div className="flex items-center gap-2 mt-1.5">
-                      <StarRating rating={review.rating} size="sm" />
-                      <span className="text-sm font-bold text-foreground">{review.rating.toFixed(1)}</span>
-                      <span className="text-xs text-muted ml-1">{formatDateRange(review.createdAt)}</span>
-                    </div>
-                    {review.comment && (
-                      <p className="text-sm text-muted mt-2 leading-relaxed">&ldquo;{review.comment}&rdquo;</p>
+                {workTab === "completed" ? (
+                  <>
+                    {reviews.map((review) => (
+                      <div key={review.id} className="px-5 py-4">
+                        <h3 className="text-sm font-medium text-primary">{review.gigTitle}</h3>
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <StarRating rating={review.rating} size="sm" />
+                          <span className="text-sm font-bold text-foreground">{review.rating.toFixed(1)}</span>
+                          <span className="text-xs text-muted ml-1">{formatReviewDate(review.createdAt)}</span>
+                        </div>
+                        {review.comment && (
+                          <p className="text-sm text-muted mt-2 leading-relaxed">&ldquo;{review.comment}&rdquo;</p>
+                        )}
+                        <p className="text-xs text-muted mt-2">— {review.clientName}</p>
+                      </div>
+                    ))}
+                    {reviews.length === 0 && (
+                      <div className="px-5 py-10 text-center">
+                        <Briefcase className="w-7 h-7 text-muted/30 mx-auto mb-2" />
+                        <p className="text-sm text-muted">No completed jobs yet</p>
+                      </div>
                     )}
-                    <p className="text-xs text-muted mt-2">— {review.clientName}</p>
-                  </div>
-                ))}
-                {reviews.length === 0 && (
-                  <div className="px-5 py-10 text-center">
-                    <Briefcase className="w-7 h-7 text-muted/30 mx-auto mb-2" />
-                    <p className="text-sm text-muted">No completed jobs yet</p>
-                  </div>
+                  </>
+                ) : (
+                  <>
+                    {activeGigs.map((gig) => (
+                      <div key={gig.id} className="px-5 py-4">
+                        <h3 className="text-sm font-medium text-primary">{gig.title}</h3>
+                        <div className="flex items-center gap-3 mt-1.5">
+                          <div className="flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5 text-secondary" />
+                            <span className="text-xs text-muted capitalize">{gig.status === "pending_completion" ? "Submitted" : "In Progress"}</span>
+                          </div>
+                          <span className="text-xs font-semibold text-accent">{gig.tokenReward} tok</span>
+                        </div>
+                      </div>
+                    ))}
+                    {activeGigs.length === 0 && (
+                      <div className="px-5 py-10 text-center">
+                        <Clock className="w-7 h-7 text-muted/30 mx-auto mb-2" />
+                        <p className="text-sm text-muted">No active gigs right now</p>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </motion.div>
