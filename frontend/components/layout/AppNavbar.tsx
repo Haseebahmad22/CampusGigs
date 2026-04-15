@@ -55,11 +55,11 @@ export function AppNavbar() {
       <nav
         className="h-14 rounded-2xl flex items-center justify-between px-5 sm:px-6 gap-4"
         style={{
-          background: "rgba(255,255,255,0.85)",
+          background: "rgba(38,48,68,0.88)",
           backdropFilter: "blur(10px)",
           WebkitBackdropFilter: "blur(10px)",
-          border: "1px solid rgba(0,0,0,0.07)",
-          boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
+          border: "1px solid rgba(255,255,255,0.08)",
+          boxShadow: "0 8px 28px rgba(7,10,18,0.26)",
         }}
       >
         {/* Logo */}
@@ -96,7 +96,7 @@ export function AppNavbar() {
           {/* Tokens */}
           <Link
             href={`${base}/tokens`}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-elevated border border-border hover:bg-[#e8e3d8] transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-elevated border border-border hover:bg-[#313a53] transition-colors"
           >
             <Coins className="w-3.5 h-3.5 text-primary" />
             <span className="text-xs font-semibold text-primary">180</span>

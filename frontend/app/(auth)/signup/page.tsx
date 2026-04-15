@@ -83,8 +83,8 @@ export default function SignUpPage() {
           href="/"
           className="absolute top-6 right-6 flex items-center gap-2 text-xs text-muted hover:text-foreground transition-colors px-3.5 py-2 rounded-md"
           style={{
-            background: "rgba(255,255,255,0.9)",
-            border: "1px solid rgba(0,0,0,0.07)",
+            background: "rgba(38,48,68,0.86)",
+            border: "1px solid rgba(255,255,255,0.08)",
           }}
         >
           <ArrowLeft className="w-3 h-3" />

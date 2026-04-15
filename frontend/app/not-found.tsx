@@ -7,30 +7,30 @@ export default function NotFound() {
   return (
     <div className="min-h-screen grid lg:grid-cols-[52%_1fr] bg-background">
       <div className="hidden lg:flex items-stretch p-5">
-        <div className="relative flex-1 rounded-[2.5rem] overflow-hidden border border-border bg-surface shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
+        <div className="relative flex-1 rounded-[2.5rem] overflow-hidden border border-border bg-surface shadow-[0_8px_24px_rgba(7,10,18,0.22)]">
           <div
             className="absolute inset-0"
             style={{
               background:
-                "linear-gradient(140deg, #f6f3ec 0%, #eef2ef 50%, #e6efee 100%)",
+                "linear-gradient(140deg, #1f2638 0%, #263044 48%, #2b3550 100%)",
             }}
           />
 
           <motion.div
             className="absolute -top-28 -right-24 w-96 h-96 rounded-full"
-            style={{ background: "rgba(10,122,110,0.12)" }}
+            style={{ background: "rgba(20,184,166,0.14)" }}
             animate={{ scale: [1, 1.08, 1] }}
             transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
           />
           <motion.div
             className="absolute -bottom-20 -left-16 w-80 h-80 rounded-full"
-            style={{ background: "rgba(14,110,140,0.12)" }}
+            style={{ background: "rgba(14,165,233,0.12)" }}
             animate={{ scale: [1, 1.1, 1] }}
             transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 1 }}
           />
 
           <div className="absolute inset-0 p-10 flex flex-col justify-between">
-            <div className="w-fit rounded-full border border-border bg-white/70 px-3 py-1 text-xs uppercase tracking-widest text-muted">
+            <div className="w-fit rounded-full border border-border bg-surface/70 px-3 py-1 text-xs uppercase tracking-widest text-muted">
               404 Not Found
             </div>
 

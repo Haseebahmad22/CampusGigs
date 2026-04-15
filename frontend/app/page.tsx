@@ -11,11 +11,11 @@ export default function Home() {
         <nav
           className="h-16 rounded-2xl flex items-center justify-between px-6 sm:px-7 gap-6"
           style={{
-            background: "rgba(255,255,255,0.86)",
+            background: "rgba(38,48,68,0.88)",
             backdropFilter: "blur(10px)",
             WebkitBackdropFilter: "blur(10px)",
-            border: "1px solid rgba(0,0,0,0.07)",
-            boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            boxShadow: "0 8px 28px rgba(7,10,18,0.26)",
           }}
         >
           <Link
@@ -103,7 +103,7 @@ export default function Home() {
               ].map((item) => (
                 <div
                   key={item}
-                  className="flex items-start gap-2.5 rounded-xl border border-border bg-surface px-3.5 py-3 shadow-[0_2px_12px_rgba(0,0,0,0.06)]"
+                  className="flex items-start gap-2.5 rounded-xl border border-border bg-surface px-3.5 py-3 shadow-[0_8px_24px_rgba(7,10,18,0.22)]"
                 >
                   <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                   <p className="text-xs text-muted leading-relaxed">{item}</p>
@@ -116,7 +116,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
-            className="rounded-2xl border border-border bg-surface p-6 sm:p-7 shadow-[0_2px_12px_rgba(0,0,0,0.06)]"
+            className="rounded-2xl border border-border bg-surface p-6 sm:p-7 shadow-[0_8px_24px_rgba(7,10,18,0.22)]"
           >
             <div className="space-y-5">
               <div>

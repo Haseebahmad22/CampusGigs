@@ -10,7 +10,7 @@ interface Props {
 export function AuthVisualPanel({ imageSrc }: Props) {
   return (
     <div className="hidden lg:flex items-stretch p-5">
-      <div className="relative flex-1 rounded-[2.5rem] overflow-hidden border border-border shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
+      <div className="relative flex-1 rounded-[2.5rem] overflow-hidden border border-border shadow-[0_10px_28px_rgba(7,10,18,0.24)]">
 
         {/* Background image or gradient fallback */}
         {imageSrc ? (
@@ -26,20 +26,20 @@ export function AuthVisualPanel({ imageSrc }: Props) {
             className="absolute inset-0"
             style={{
               background:
-                "linear-gradient(150deg, #f1ede4 0%, #e7ebe8 38%, #dbe5e4 100%)",
+                "linear-gradient(150deg, #1f2638 0%, #263044 45%, #2b3550 100%)",
             }}
           />
         )}
 
         {/* Soft overlay to keep text readable over any photo */}
-        <div className="absolute inset-0 bg-white/45" />
+        <div className="absolute inset-0 bg-background/45" />
 
         {/* Subtle accent tint */}
         <motion.div
           className="absolute inset-0 pointer-events-none"
           style={{
             background:
-              "radial-gradient(ellipse 80% 60% at 80% 18%, rgba(10,122,110,0.2) 0%, transparent 70%)",
+              "radial-gradient(ellipse 80% 60% at 80% 18%, rgba(20,184,166,0.24) 0%, transparent 70%)",
           }}
           animate={{ opacity: [0.45, 0.75, 0.45] }}
           transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
@@ -50,7 +50,7 @@ export function AuthVisualPanel({ imageSrc }: Props) {
           className="absolute bottom-0 left-0 right-0 h-2/5 pointer-events-none"
           style={{
             background:
-              "linear-gradient(to top, rgba(248,247,244,0.94) 0%, transparent 100%)",
+              "linear-gradient(to top, rgba(28,33,48,0.94) 0%, transparent 100%)",
           }}
         />
 
