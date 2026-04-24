@@ -6,6 +6,9 @@ const authRoutes = require("./routes/auth");
 const profileRoutes = require("./routes/profile");
 const skillsRoutes = require("./routes/skills");
 const freelancerRoutes = require("./routes/freelancers");
+const gigRoutes = require("./routes/gigs");
+const notificationRoutes = require("./routes/notifications");
+const reviewRoutes = require("./routes/reviews");
 const errorHandler = require("./middleware/error-handler");
 const { query } = require("./db/pool");
 
@@ -32,6 +35,9 @@ app.use("/api/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/skills", skillsRoutes);
 app.use("/api/freelancers", freelancerRoutes);
+app.use("/api/gigs", gigRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/reviews", reviewRoutes);
 
 app.use(errorHandler);
 

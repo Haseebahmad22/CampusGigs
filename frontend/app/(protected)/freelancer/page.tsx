@@ -4,25 +4,22 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
-  Star,
-  Clock,
-  CheckCircle,
-  TrendingUp,
-  ArrowRight,
-  Edit3,
-  Eye,
-  Briefcase,
-  Users,
-  Zap,
+  Clock, CheckCircle, TrendingUp, ArrowRight, Edit3, Briefcase,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { AppNavbar } from "@/components/layout/AppNavbar";
+import { Badge } from "@/components/ui/badge";
+import type { Gig, GigWithProposal, GigStatus } from "@/lib/types";
 
-const availableGigs = [
-  { title: "Design Social Media Graphics", client: "TechClub", budget: 40, category: "Design", deadline: "3 days" },
-  { title: "Develop React Component", client: "StartupHub", budget: 80, category: "Dev", deadline: "5 days" },
-  { title: "Edit Research Paper", client: "AcadSoc", budget: 25, category: "Writing", deadline: "2 days" },
-  { title: "Build Landing Page for Event", client: "IEEE Society", budget: 60, category: "Dev", deadline: "4 days" },
-];
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+
+const statusConfig: Record<GigStatus, { label: string; variant: "primary" | "secondary" | "warning" | "success" | "error" }> = {
+  open: { label: "Open", variant: "primary" },
+  in_progress: { label: "In Progress", variant: "secondary" },
+  pending_completion: { label: "Submitted", variant: "warning" },
+  closed: { label: "Completed", variant: "success" },
+  cancelled: { label: "Cancelled", variant: "error" },
+};
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -36,44 +33,55 @@ const itemVariants = {
 export default function FreelancerDashboard() {
   const router = useRouter();
   const [userName, setUserName] = useState("Freelancer");
+  const [myGigs, setMyGigs] = useState<GigWithProposal[]>([]);
+  const [openGigs, setOpenGigs] = useState<Gig[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     try {
       const user = JSON.parse(localStorage.getItem("campusgigs_user") || "{}");
       setUserName(user.fullName || user.full_name || "Freelancer");
     } catch { /* ignore */ }
+
+    const token = localStorage.getItem("campusgigs_token");
+    if (!token) return;
+
+    Promise.all([
+      fetch(`${API}/api/gigs/my-proposals`, { headers: { Authorization: `Bearer ${token}` } }).then((r) => r.json()),
+      fetch(`${API}/api/gigs?limit=4`).then((r) => r.json()),
+    ])
+      .then(([proposalsData, gigsData]) => {
+        if (Array.isArray(proposalsData?.data)) setMyGigs(proposalsData.data);
+        if (Array.isArray(gigsData?.data)) setOpenGigs(gigsData.data);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   const firstName = userName.split(" ")[0];
+  const activeCount = myGigs.filter((g) => g.proposal.status === "accepted" && ["in_progress", "pending_completion"].includes(g.status)).length;
+  const completedCount = myGigs.filter((g) => g.status === "closed").length;
+  const totalEarned = myGigs.filter((g) => g.status === "closed").reduce((sum, g) => sum + g.tokenReward, 0);
 
   return (
     <div className="min-h-screen bg-background">
       <AppNavbar />
 
       <main className="max-w-5xl mx-auto px-5 pt-24 pb-16">
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="space-y-8"
-        >
+        <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-8">
           {/* Greeting */}
           <motion.div variants={itemVariants}>
-            <h1 className="text-2xl font-bold text-foreground">
-              Welcome back, {firstName}
-            </h1>
-            <p className="text-sm text-muted mt-1">
-              Here&apos;s what&apos;s happening with your gigs
-            </p>
+            <h1 className="text-2xl font-bold text-foreground">Welcome back, {firstName}</h1>
+            <p className="text-sm text-muted mt-1">Here&apos;s what&apos;s happening with your gigs</p>
           </motion.div>
 
           {/* Stats */}
           <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {[
-              { label: "Active Gigs", value: "2", icon: Clock, color: "text-secondary", bg: "bg-secondary/8", border: "border-secondary/15" },
-              { label: "Completed", value: "7", icon: CheckCircle, color: "text-success", bg: "bg-success/8", border: "border-success/15" },
-              { label: "Tokens Earned", value: "340", icon: TrendingUp, color: "text-accent", bg: "bg-accent/8", border: "border-accent/15" },
-              { label: "Rating", value: "4.8", icon: Star, color: "text-warning", bg: "bg-warning/8", border: "border-warning/15" },
+              { label: "Active Gigs", value: String(activeCount), icon: Clock, color: "text-secondary", bg: "bg-secondary/8", border: "border-secondary/15" },
+              { label: "Completed", value: String(completedCount), icon: CheckCircle, color: "text-success", bg: "bg-success/8", border: "border-success/15" },
+              { label: "Tokens Earned", value: String(totalEarned), icon: TrendingUp, color: "text-accent", bg: "bg-accent/8", border: "border-accent/15" },
+              { label: "Proposals", value: String(myGigs.length), icon: Briefcase, color: "text-primary", bg: "bg-primary/8", border: "border-primary/15" },
             ].map((stat) => (
               <div key={stat.label} className={`p-4 rounded-lg border ${stat.border} ${stat.bg}`}>
                 <div className="flex items-center gap-2 mb-2">
@@ -102,18 +110,15 @@ export default function FreelancerDashboard() {
             </button>
 
             <button
-              onClick={() => {
-                const user = JSON.parse(localStorage.getItem("campusgigs_user") || "{}");
-                router.push(`/freelancer/profile/${user.id || "demo"}`);
-              }}
+              onClick={() => router.push("/freelancer/gigs")}
               className="flex items-center gap-4 p-4 rounded-lg border border-border bg-surface hover:border-secondary/30 hover:bg-surface-elevated transition-all text-left group"
             >
               <div className="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center shrink-0 group-hover:bg-secondary/15 transition-colors">
-                <Eye className="w-4.5 h-4.5 text-secondary" />
+                <Briefcase className="w-4.5 h-4.5 text-secondary" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-foreground">View Public Profile</p>
-                <p className="text-xs text-muted mt-0.5">See how clients see you</p>
+                <p className="text-sm font-semibold text-foreground">Browse Gigs</p>
+                <p className="text-xs text-muted mt-0.5">Find work that matches your skills</p>
               </div>
               <ArrowRight className="w-4 h-4 text-muted group-hover:text-secondary transition-colors" />
             </button>
@@ -123,39 +128,47 @@ export default function FreelancerDashboard() {
           <motion.div variants={itemVariants}>
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-base font-semibold text-foreground">Available Gigs</h2>
-              <button className="text-xs text-primary hover:text-primary-light transition-colors font-medium">
+              <button
+                onClick={() => router.push("/freelancer/gigs")}
+                className="text-xs text-primary hover:text-primary-light transition-colors font-medium"
+              >
                 Browse all
               </button>
             </div>
 
-            <div className="rounded-lg border border-border bg-surface overflow-hidden">
-              {availableGigs.map((gig, i) => (
-                <div
-                  key={gig.title}
-                  className={`flex items-center justify-between px-4 py-3.5 hover:bg-surface-elevated transition-colors ${
-                    i < availableGigs.length - 1 ? "border-b border-border/60" : ""
-                  }`}
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-foreground truncate">{gig.title}</p>
-                    <p className="text-xs text-muted mt-0.5">
-                      {gig.client} · Due in {gig.deadline}
-                    </p>
+            {loading ? (
+              <div className="py-10 flex justify-center">
+                <div className="w-7 h-7 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+              </div>
+            ) : openGigs.length === 0 ? (
+              <div className="rounded-lg border border-border bg-surface p-8 text-center">
+                <Briefcase className="w-8 h-8 text-muted/30 mx-auto mb-2" />
+                <p className="text-sm text-muted">No open gigs right now. Check back soon.</p>
+              </div>
+            ) : (
+              <div className="rounded-lg border border-border bg-surface overflow-hidden">
+                {openGigs.map((gig, i) => (
+                  <div
+                    key={gig.id}
+                    onClick={() => router.push(`/freelancer/gigs/${gig.id}`)}
+                    className={cn(
+                      "flex items-center justify-between px-4 py-3.5 hover:bg-surface-elevated transition-colors cursor-pointer",
+                      i < openGigs.length - 1 && "border-b border-border/60"
+                    )}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-foreground truncate">{gig.title}</p>
+                      <p className="text-xs text-muted mt-0.5">
+                        {gig.clientName} · {gig.proposalCount} proposals
+                      </p>
+                    </div>
+                    <div className="shrink-0 ml-4">
+                      <span className="text-sm font-semibold text-accent">{gig.tokenReward} tok</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3 shrink-0 ml-4">
-                    <span className="text-xs px-2 py-0.5 rounded bg-surface-elevated border border-border text-muted font-medium">
-                      {gig.category}
-                    </span>
-                    <span className="text-sm font-semibold text-accent whitespace-nowrap">
-                      {gig.budget} tok
-                    </span>
-                    <button className="text-xs px-3 py-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20 font-semibold hover:bg-primary/20 transition-colors">
-                      Apply
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </motion.div>
         </motion.div>
       </main>
