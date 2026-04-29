@@ -66,7 +66,7 @@ export default function HowItWorksPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Navbar */}
-      <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2.5rem)] max-w-245">
+      <div className="fixed top-5 left-0 right-0 z-50 px-5 sm:px-7">
         <nav
           className="h-16 rounded-2xl flex items-center justify-between px-6 sm:px-7 gap-6"
           style={{
@@ -96,7 +96,7 @@ export default function HowItWorksPage() {
         </nav>
       </div>
 
-      <main className="max-w-5xl mx-auto px-6 sm:px-8 pt-36 sm:pt-44 pb-20">
+      <main className="max-w-none mx-auto px-6 sm:px-8 pt-36 sm:pt-44 pb-20">
         {/* Header */}
         <motion.div {...fade(0.1)} className="text-center mb-16">
           <span className="inline-flex items-center px-3.5 py-1.5 rounded-full border border-border bg-surface text-xs text-muted tracking-wide uppercase">

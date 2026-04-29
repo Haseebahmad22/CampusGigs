@@ -3,7 +3,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 const { query } = require("../db/pool");
-const { jwtSecret } = require("../config/env");
+const { jwtSecret, defaultStartingTokens } = require("../config/env");
 
 const router = express.Router();
 
@@ -72,6 +72,22 @@ router.post("/signup", async (req, res, next) => {
     );
 
     const user = result.rows[0];
+
+    const startingTokens = Math.max(Number(defaultStartingTokens) || 0, 0);
+    await query(
+      `INSERT INTO token_accounts (user_id, balance) VALUES ($1, $2) ON CONFLICT (user_id) DO NOTHING`,
+      [user.id, startingTokens]
+    );
+
+    if (startingTokens > 0) {
+      await query(
+        `
+          INSERT INTO token_transactions (type, from_user_id, to_user_id, amount, note)
+          VALUES ('signup_bonus', NULL, $1, $2, $3)
+        `,
+        [user.id, startingTokens, "Signup bonus"]
+      );
+    }
 
     return res.status(201).json({
       message: "Signup successful. Please sign in to continue.",

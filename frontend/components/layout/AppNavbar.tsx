@@ -15,6 +15,7 @@ export function AppNavbar() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifs, setShowNotifs] = useState(false);
   const [notifications, setNotifications] = useState<{ id: string; message: string; gigId: string | null; isRead: boolean; createdAt: string }[]>([]);
+  const [balance, setBalance] = useState<number | null>(null);
 
   useEffect(() => {
     setRole(localStorage.getItem("campusgigs_role"));
@@ -26,12 +27,12 @@ export function AppNavbar() {
     }
   }, []);
 
-  // Fetch notification count
+  // Fetch notification count and balance
   useEffect(() => {
     const token = localStorage.getItem("campusgigs_token");
     if (!token) return;
 
-    const fetchNotifs = () => {
+    const fetchData = () => {
       fetch(`${API}/api/notifications`, {
         headers: { Authorization: `Bearer ${token}` },
       })
@@ -40,11 +41,20 @@ export function AppNavbar() {
           if (typeof data?.unreadCount === "number") setUnreadCount(data.unreadCount);
           if (Array.isArray(data?.data)) setNotifications(data.data.slice(0, 10));
         })
-        .catch(() => {});
+        .catch(() => { });
+
+      fetch(`${API}/api/tokens/balance`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (typeof data?.balance === "number") setBalance(data.balance);
+        })
+        .catch(() => { });
     };
 
-    fetchNotifs();
-    const interval = setInterval(fetchNotifs, 30000);
+    fetchData();
+    const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -64,7 +74,7 @@ export function AppNavbar() {
     }).then(() => {
       setUnreadCount(0);
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-    }).catch(() => {});
+    }).catch(() => { });
   };
 
   const handleBellClick = () => {
@@ -77,18 +87,18 @@ export function AppNavbar() {
 
   const links = isFreelancer
     ? [
-        { label: "Dashboard", href: "/freelancer" },
-        { label: "Browse Gigs", href: "/freelancer/gigs" },
-        { label: "My Gigs", href: "/freelancer/my-gigs" },
-      ]
+      { label: "Dashboard", href: "/freelancer" },
+      { label: "Browse Gigs", href: "/freelancer/gigs" },
+      { label: "My Gigs", href: "/freelancer/my-gigs" },
+    ]
     : [
-        { label: "Dashboard", href: "/client" },
-        { label: "My Gigs", href: "/client/gigs" },
-        { label: "Find Talent", href: "/client/freelancers" },
-      ];
+      { label: "Dashboard", href: "/client" },
+      { label: "My Gigs", href: "/client/gigs" },
+      { label: "Find Talent", href: "/client/freelancers" },
+    ];
 
   return (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-240">
+    <div className="fixed top-4 left-0 right-0 z-50 px-4 sm:px-6">
       <nav
         className="h-14 rounded-2xl flex items-center justify-between px-5 sm:px-6 gap-4"
         style={{
@@ -116,11 +126,10 @@ export function AppNavbar() {
               <Link
                 key={link.label}
                 href={link.href}
-                className={`text-[13px] transition-colors ${
-                  isActive
+                className={`text-[13px] transition-colors ${isActive
                     ? "text-foreground font-medium"
                     : "text-muted hover:text-foreground"
-                }`}
+                  }`}
               >
                 {link.label}
               </Link>
@@ -130,6 +139,14 @@ export function AppNavbar() {
 
         {/* Right side */}
         <div className="flex items-center gap-3 shrink-0">
+          {/* Balance */}
+          {balance !== null && (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary" title="Token Balance">
+              <span className="text-[13px] font-bold">{balance}</span>
+              <span className="text-[10px] uppercase font-semibold">Tokens</span>
+            </div>
+          )}
+
           {/* Notifications */}
           <div className="relative">
             <button

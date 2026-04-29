@@ -303,7 +303,7 @@ export default function EditProfilePage() {
         </div>
       </div>
 
-      <main className="max-w-5xl mx-auto px-5 pt-24 pb-24">
+      <main className="max-w-none mx-auto px-5 pt-24 pb-24">
         <motion.div variants={containerVariants} initial="hidden" animate="visible">
           {/* Page header */}
           <motion.div variants={itemVariants} className="mb-6">

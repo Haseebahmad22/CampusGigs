@@ -90,7 +90,7 @@ export default function FreelancerGigDetailPage() {
     <div className="min-h-screen bg-background">
       <AppNavbar />
 
-      <main className="max-w-3xl mx-auto px-5 pt-24 pb-16">
+      <main className="max-w-none mx-auto px-5 pt-24 pb-16">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
           {/* Back */}
           <button

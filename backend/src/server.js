@@ -9,6 +9,7 @@ const freelancerRoutes = require("./routes/freelancers");
 const gigRoutes = require("./routes/gigs");
 const notificationRoutes = require("./routes/notifications");
 const reviewRoutes = require("./routes/reviews");
+const tokenRoutes = require("./routes/tokens");
 const errorHandler = require("./middleware/error-handler");
 const { query } = require("./db/pool");
 
@@ -38,6 +39,7 @@ app.use("/api/freelancers", freelancerRoutes);
 app.use("/api/gigs", gigRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/reviews", reviewRoutes);
+app.use("/api/tokens", tokenRoutes);
 
 app.use(errorHandler);
 

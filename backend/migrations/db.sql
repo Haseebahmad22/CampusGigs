@@ -129,6 +129,53 @@ CREATE TABLE IF NOT EXISTS public.reviews (
 CREATE INDEX IF NOT EXISTS idx_reviews_freelancer ON public.reviews(freelancer_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_client ON public.reviews(client_id);
 
+-- =============================================
+-- Token system: accounts, escrows, transactions
+-- =============================================
+
+CREATE TABLE IF NOT EXISTS public.token_accounts (
+  user_id UUID PRIMARY KEY REFERENCES public.users(id) ON DELETE CASCADE,
+  balance INTEGER NOT NULL DEFAULT 0 CHECK (balance >= 0),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+DROP TRIGGER IF EXISTS trg_token_accounts_set_updated_at ON public.token_accounts;
+CREATE TRIGGER trg_token_accounts_set_updated_at
+BEFORE UPDATE ON public.token_accounts
+FOR EACH ROW
+EXECUTE FUNCTION public.set_updated_at();
+
+CREATE TABLE IF NOT EXISTS public.token_escrows (
+  gig_id UUID PRIMARY KEY REFERENCES public.gigs(id) ON DELETE CASCADE,
+  client_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  freelancer_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  amount INTEGER NOT NULL CHECK (amount > 0),
+  status TEXT NOT NULL DEFAULT 'held' CHECK (status IN ('held', 'released', 'refunded')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  released_at TIMESTAMPTZ,
+  refunded_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_token_escrows_client ON public.token_escrows(client_id);
+CREATE INDEX IF NOT EXISTS idx_token_escrows_freelancer ON public.token_escrows(freelancer_id);
+CREATE INDEX IF NOT EXISTS idx_token_escrows_status ON public.token_escrows(status);
+
+CREATE TABLE IF NOT EXISTS public.token_transactions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  from_user_id UUID REFERENCES public.users(id) ON DELETE SET NULL,
+  to_user_id UUID REFERENCES public.users(id) ON DELETE SET NULL,
+  gig_id UUID REFERENCES public.gigs(id) ON DELETE SET NULL,
+  amount INTEGER NOT NULL CHECK (amount > 0),
+  type TEXT NOT NULL CHECK (type IN ('signup_bonus', 'gig_payout', 'manual_adjustment')),
+  note TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_token_transactions_from ON public.token_transactions(from_user_id);
+CREATE INDEX IF NOT EXISTS idx_token_transactions_to ON public.token_transactions(to_user_id);
+CREATE INDEX IF NOT EXISTS idx_token_transactions_gig ON public.token_transactions(gig_id);
+
 INSERT INTO public.skill_categories (name, slug, icon, sort_order)
 VALUES
   ('Web Development', 'web-development', 'Globe', 1),

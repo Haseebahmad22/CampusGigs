@@ -7,6 +7,7 @@ const env = {
   corsOrigin: process.env.CORS_ORIGIN || "http://localhost:3000",
   databaseUrl: process.env.DATABASE_URL,
   jwtSecret: process.env.JWT_SECRET,
+  defaultStartingTokens: Number(process.env.DEFAULT_STARTING_TOKENS || 50),
 };
 
 if (!env.databaseUrl) {

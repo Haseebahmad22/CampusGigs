@@ -110,7 +110,7 @@ export default function BrowseFreelancersPage() {
 
       {/* Search Header */}
       <div className="border-b border-border bg-surface/40">
-        <div className="max-w-5xl mx-auto px-5 pt-24 pb-6">
+        <div className="max-w-none mx-auto px-5 pt-24 pb-6">
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -248,7 +248,7 @@ export default function BrowseFreelancersPage() {
       </div>
 
       {/* Results */}
-      <div className="max-w-5xl mx-auto px-5 py-5">
+      <div className="max-w-none mx-auto px-5 py-5">
         <div className="flex items-center justify-between mb-4">
           <p className="text-sm text-muted">
             <span className="font-semibold text-foreground">

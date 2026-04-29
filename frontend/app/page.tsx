@@ -24,7 +24,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background text-foreground overflow-hidden">
       {/* Navbar */}
-      <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2.5rem)] max-w-245">
+      <div className="fixed top-5 left-0 right-0 z-50 px-5 sm:px-7">
         <motion.nav
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -76,7 +76,7 @@ export default function Home() {
       </div>
 
       {/* Hero */}
-      <main className="relative max-w-6xl mx-auto px-6 sm:px-8">
+      <main className="relative max-w-none mx-auto px-6 sm:px-8">
         {/* Ambient gradient blobs */}
         <div className="pointer-events-none absolute -top-32 -left-40 w-[600px] h-[600px] rounded-full opacity-[0.07] bg-primary blur-[120px]" />
         <div className="pointer-events-none absolute top-20 -right-32 w-[500px] h-[500px] rounded-full opacity-[0.05] bg-secondary blur-[100px]" />

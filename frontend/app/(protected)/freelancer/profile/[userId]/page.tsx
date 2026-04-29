@@ -145,7 +145,7 @@ export default function FreelancerPublicProfile() {
     <div className="min-h-screen bg-background">
       <AppNavbar />
 
-      <main className="max-w-6xl mx-auto px-5 pt-24 pb-16">
+      <main className="max-w-none mx-auto px-5 pt-24 pb-16">
         <motion.div
           variants={containerVariants}
           initial="hidden"

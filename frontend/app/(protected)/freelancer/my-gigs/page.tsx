@@ -96,7 +96,7 @@ export default function MyGigsPage() {
     <div className="min-h-screen bg-background">
       <AppNavbar />
 
-      <main className="max-w-5xl mx-auto px-5 pt-24 pb-16">
+      <main className="max-w-none mx-auto px-5 pt-24 pb-16">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
           <div>
             <h1 className="text-2xl font-bold text-foreground">My Gigs</h1>
