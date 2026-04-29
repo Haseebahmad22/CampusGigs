@@ -10,6 +10,12 @@ const router = express.Router();
 
 // ── helpers ──
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const MAX_TITLE_LENGTH = 200;
+const MAX_DESCRIPTION_LENGTH = 5000;
+const MAX_COVER_LETTER_LENGTH = 4000;
+const MAX_TOKEN_REWARD = 100000;
+
 async function notify(userId, type, message, gigId, dbQuery = query) {
   await dbQuery(
     `INSERT INTO notifications (user_id, type, message, gig_id) VALUES ($1, $2, $3, $4)`,
@@ -77,12 +83,58 @@ function requestError(status, message) {
   return err;
 }
 
+function isUuid(value) {
+  return UUID_REGEX.test(value);
+}
+
+function normalizeRequiredText(value, fieldName, maxLength) {
+  if (typeof value !== "string") {
+    throw requestError(400, `${fieldName} is required.`);
+  }
+  const trimmed = value.trim();
+  if (!trimmed) {
+    throw requestError(400, `${fieldName} is required.`);
+  }
+  if (trimmed.length > maxLength) {
+    throw requestError(400, `${fieldName} must be under ${maxLength} characters.`);
+  }
+  return trimmed;
+}
+
+function parseTokenReward(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || !Number.isInteger(parsed)) {
+    throw requestError(400, "Token reward must be a whole number.");
+  }
+  if (parsed <= 0) {
+    throw requestError(400, "Token reward must be a positive number.");
+  }
+  if (parsed > MAX_TOKEN_REWARD) {
+    throw requestError(400, `Token reward must be ${MAX_TOKEN_REWARD} or less.`);
+  }
+  return parsed;
+}
+
 async function ensureTokenAccountTx(db, userId) {
   await db.query(
     `INSERT INTO token_accounts (user_id, balance) VALUES ($1, 0) ON CONFLICT (user_id) DO NOTHING`,
     [userId]
   );
 }
+
+router.param("id", (req, res, next, id) => {
+  if (!isUuid(id)) {
+    return res.status(400).json({ error: "Invalid gig id." });
+  }
+  return next();
+});
+
+router.param("proposalId", (req, res, next, id) => {
+  if (!isUuid(id)) {
+    return res.status(400).json({ error: "Invalid proposal id." });
+  }
+  return next();
+});
 
 // ── routes ──
 
@@ -267,85 +319,238 @@ router.get("/:id", optionalAuth, async (req, res, next) => {
 
 // Create gig
 router.post("/", auth, requireRole("client"), async (req, res, next) => {
-  try {
-    const { title, description, tokenReward } = req.body;
+  const client = await pool.connect();
 
-    if (!title || !title.trim()) return res.status(400).json({ error: "Title is required." });
-    if (title.trim().length > 200) return res.status(400).json({ error: "Title must be under 200 characters." });
-    if (!description || !description.trim()) return res.status(400).json({ error: "Description is required." });
-    if (!tokenReward || isNaN(Number(tokenReward)) || Number(tokenReward) <= 0) {
-      return res.status(400).json({ error: "Token reward must be a positive number." });
+  try {
+    const title = normalizeRequiredText(req.body.title, "Title", MAX_TITLE_LENGTH);
+    const description = normalizeRequiredText(req.body.description, "Description", MAX_DESCRIPTION_LENGTH);
+    const tokenReward = parseTokenReward(req.body.tokenReward);
+
+    await client.query("BEGIN");
+
+    await ensureTokenAccountTx(client, req.user.id);
+
+    const debit = await client.query(
+      `UPDATE token_accounts SET balance = balance - $1
+       WHERE user_id = $2 AND balance >= $1
+       RETURNING balance`,
+      [tokenReward, req.user.id]
+    );
+
+    if (debit.rowCount === 0) {
+      throw requestError(400, "Insufficient token balance to post this gig.");
     }
 
-    const result = await query(
+    const result = await client.query(
       `INSERT INTO gigs (client_id, title, description, token_reward)
        VALUES ($1, $2, $3, $4) RETURNING *`,
-      [req.user.id, title.trim(), description.trim(), Number(tokenReward)]
+      [req.user.id, title, description, tokenReward]
     );
 
     const row = result.rows[0];
-    const userResult = await query(`SELECT full_name FROM users WHERE id = $1`, [req.user.id]);
+
+    await client.query(
+      `INSERT INTO token_escrows (gig_id, client_id, freelancer_id, amount, status)
+       VALUES ($1, $2, $3, $4, 'held')`,
+      [row.id, req.user.id, null, tokenReward]
+    );
+
+    await client.query(
+      `INSERT INTO token_transactions (type, from_user_id, to_user_id, gig_id, amount, note)
+       VALUES ('manual_adjustment', $1, NULL, $2, $3, $4)`,
+      [req.user.id, row.id, tokenReward, "Gig hold"]
+    );
+
+    const userResult = await client.query(`SELECT full_name FROM users WHERE id = $1`, [req.user.id]);
     row.client_name = userResult.rows[0]?.full_name || null;
     row.proposal_count = 0;
+    row.pending_proposal_count = 0;
 
+    await client.query("COMMIT");
     return res.status(201).json(mapGig(row));
   } catch (error) {
+    await client.query("ROLLBACK");
     return next(error);
+  } finally {
+    client.release();
   }
 });
 
 // Edit gig (client, only if open)
 router.put("/:id", auth, requireRole("client"), async (req, res, next) => {
-  try {
-    const gig = await findGig(req.params.id);
-    if (!gig) return res.status(404).json({ error: "Gig not found." });
-    if (gig.client_id !== req.user.id) return res.status(403).json({ error: "Not your gig." });
-    if (gig.status !== "open") return res.status(400).json({ error: "Can only edit open gigs." });
+  const client = await pool.connect();
 
-    const { title, description, tokenReward } = req.body;
-    if (!title || !title.trim()) return res.status(400).json({ error: "Title is required." });
-    if (!description || !description.trim()) return res.status(400).json({ error: "Description is required." });
-    if (!tokenReward || isNaN(Number(tokenReward)) || Number(tokenReward) <= 0) {
-      return res.status(400).json({ error: "Token reward must be a positive number." });
+  try {
+    const title = normalizeRequiredText(req.body.title, "Title", MAX_TITLE_LENGTH);
+    const description = normalizeRequiredText(req.body.description, "Description", MAX_DESCRIPTION_LENGTH);
+    const tokenReward = parseTokenReward(req.body.tokenReward);
+
+    await client.query("BEGIN");
+
+    const gigResult = await client.query(`SELECT * FROM gigs WHERE id = $1 FOR UPDATE`, [req.params.id]);
+    const gig = gigResult.rows[0];
+    if (!gig) throw requestError(404, "Gig not found.");
+    if (gig.client_id !== req.user.id) throw requestError(403, "Not your gig.");
+    if (gig.status !== "open") throw requestError(400, "Can only edit open gigs.");
+
+    await ensureTokenAccountTx(client, req.user.id);
+
+    const escrowResult = await client.query(
+      `SELECT * FROM token_escrows WHERE gig_id = $1 FOR UPDATE`,
+      [req.params.id]
+    );
+    const escrow = escrowResult.rows[0] || null;
+
+    if (!escrow) {
+      const debit = await client.query(
+        `UPDATE token_accounts SET balance = balance - $1
+         WHERE user_id = $2 AND balance >= $1
+         RETURNING balance`,
+        [tokenReward, req.user.id]
+      );
+
+      if (debit.rowCount === 0) {
+        throw requestError(400, "Insufficient token balance to update this gig.");
+      }
+
+      await client.query(
+        `INSERT INTO token_escrows (gig_id, client_id, freelancer_id, amount, status)
+         VALUES ($1, $2, $3, $4, 'held')`,
+        [req.params.id, req.user.id, null, tokenReward]
+      );
+
+      await client.query(
+        `INSERT INTO token_transactions (type, from_user_id, to_user_id, gig_id, amount, note)
+         VALUES ('manual_adjustment', $1, NULL, $2, $3, $4)`,
+        [req.user.id, req.params.id, tokenReward, "Gig hold (legacy)" ]
+      );
+    } else {
+      if (escrow.status !== "held") {
+        throw requestError(400, "Cannot edit gig after escrow is released or refunded.");
+      }
+
+      const currentAmount = Number(escrow.amount);
+      const delta = tokenReward - currentAmount;
+
+      if (delta > 0) {
+        const debit = await client.query(
+          `UPDATE token_accounts SET balance = balance - $1
+           WHERE user_id = $2 AND balance >= $1
+           RETURNING balance`,
+          [delta, req.user.id]
+        );
+
+        if (debit.rowCount === 0) {
+          throw requestError(400, "Insufficient token balance to increase reward.");
+        }
+
+        await client.query(
+          `INSERT INTO token_transactions (type, from_user_id, to_user_id, gig_id, amount, note)
+           VALUES ('manual_adjustment', $1, NULL, $2, $3, $4)`,
+          [req.user.id, req.params.id, delta, "Gig hold adjustment"]
+        );
+      } else if (delta < 0) {
+        const refund = Math.abs(delta);
+        await client.query(
+          `UPDATE token_accounts SET balance = balance + $1 WHERE user_id = $2`,
+          [refund, req.user.id]
+        );
+
+        await client.query(
+          `INSERT INTO token_transactions (type, from_user_id, to_user_id, gig_id, amount, note)
+           VALUES ('manual_adjustment', $1, NULL, $2, $3, $4)`,
+          [req.user.id, req.params.id, refund, "Gig hold refund"]
+        );
+      }
+
+      if (delta !== 0) {
+        await client.query(
+          `UPDATE token_escrows SET amount = $1 WHERE gig_id = $2`,
+          [tokenReward, req.params.id]
+        );
+      }
     }
 
-    const result = await query(
+    const result = await client.query(
       `UPDATE gigs SET title = $1, description = $2, token_reward = $3, updated_at = NOW()
        WHERE id = $4 RETURNING *`,
-      [title.trim(), description.trim(), Number(tokenReward), req.params.id]
+      [title, description, tokenReward, req.params.id]
     );
 
     const row = result.rows[0];
     row.client_name = null;
     row.proposal_count = 0;
+
+    await client.query("COMMIT");
     return res.status(200).json(mapGig(row));
   } catch (error) {
+    await client.query("ROLLBACK");
     return next(error);
+  } finally {
+    client.release();
   }
 });
 
 // Cancel gig (client, only if open)
 router.delete("/:id", auth, requireRole("client"), async (req, res, next) => {
+  const client = await pool.connect();
+
   try {
-    const gig = await findGig(req.params.id);
-    if (!gig) return res.status(404).json({ error: "Gig not found." });
-    if (gig.client_id !== req.user.id) return res.status(403).json({ error: "Not your gig." });
-    if (gig.status !== "open") return res.status(400).json({ error: "Can only cancel open gigs." });
+    await client.query("BEGIN");
 
-    await query(`UPDATE gigs SET status = 'cancelled' WHERE id = $1`, [req.params.id]);
+    const gigResult = await client.query(`SELECT * FROM gigs WHERE id = $1 FOR UPDATE`, [req.params.id]);
+    const gig = gigResult.rows[0];
+    if (!gig) throw requestError(404, "Gig not found.");
+    if (gig.client_id !== req.user.id) throw requestError(403, "Not your gig.");
+    if (gig.status !== "open") throw requestError(400, "Can only cancel open gigs.");
 
-    // Notify all pending proposers
-    const proposals = await query(
+    const escrowResult = await client.query(
+      `SELECT * FROM token_escrows WHERE gig_id = $1 FOR UPDATE`,
+      [req.params.id]
+    );
+    const escrow = escrowResult.rows[0] || null;
+
+    if (escrow) {
+      if (escrow.status !== "held") {
+        throw requestError(400, "Escrow is already released or refunded.");
+      }
+
+      const refundAmount = Number(escrow.amount);
+      await ensureTokenAccountTx(client, req.user.id);
+      await client.query(
+        `UPDATE token_accounts SET balance = balance + $1 WHERE user_id = $2`,
+        [refundAmount, req.user.id]
+      );
+      await client.query(
+        `UPDATE token_escrows SET status = 'refunded', refunded_at = NOW() WHERE gig_id = $1`,
+        [req.params.id]
+      );
+      await client.query(
+        `INSERT INTO token_transactions (type, from_user_id, to_user_id, gig_id, amount, note)
+         VALUES ('manual_adjustment', $1, NULL, $2, $3, $4)`,
+        [req.user.id, req.params.id, refundAmount, "Gig refund"]
+      );
+    }
+
+    await client.query(`UPDATE gigs SET status = 'cancelled' WHERE id = $1`, [req.params.id]);
+
+    const proposals = await client.query(
       `SELECT freelancer_id FROM gig_proposals WHERE gig_id = $1 AND status = 'pending'`,
       [req.params.id]
     );
+
+    const dbQuery = client.query.bind(client);
     for (const row of proposals.rows) {
-      await notify(row.freelancer_id, "gig_cancelled", `The gig "${gig.title}" has been cancelled.`, gig.id);
+      await notify(row.freelancer_id, "gig_cancelled", `The gig "${gig.title}" has been cancelled.`, gig.id, dbQuery);
     }
 
+    await client.query("COMMIT");
     return res.status(200).json({ message: "Gig cancelled." });
   } catch (error) {
+    await client.query("ROLLBACK");
     return next(error);
+  } finally {
+    client.release();
   }
 });
 
@@ -366,15 +571,17 @@ router.post("/:id/proposals", auth, requireRole("freelancer"), async (req, res, 
       return res.status(409).json({ error: "You already submitted a proposal for this gig." });
     }
 
-    const { coverLetter } = req.body;
-    if (!coverLetter || !coverLetter.trim()) {
-      return res.status(400).json({ error: "A proposal message is required." });
+    let coverLetter = req.body.coverLetter;
+    try {
+      coverLetter = normalizeRequiredText(coverLetter, "A proposal message", MAX_COVER_LETTER_LENGTH);
+    } catch (validationError) {
+      return next(validationError);
     }
 
     const result = await query(
       `INSERT INTO gig_proposals (gig_id, freelancer_id, cover_letter)
        VALUES ($1, $2, $3) RETURNING *`,
-      [req.params.id, req.user.id, coverLetter.trim()]
+      [req.params.id, req.user.id, coverLetter]
     );
 
     // Notify client
@@ -452,29 +659,50 @@ router.patch("/:id/proposals/:proposalId/accept", auth, requireRole("client"), a
     await ensureTokenAccountTx(client, gig.client_id);
     await ensureTokenAccountTx(client, freelancerId);
 
-    const existingEscrow = await client.query(
-      `SELECT status FROM token_escrows WHERE gig_id = $1 FOR UPDATE`,
+    const escrowResult = await client.query(
+      `SELECT * FROM token_escrows WHERE gig_id = $1 FOR UPDATE`,
       [req.params.id]
     );
-    if (existingEscrow.rowCount > 0) {
-      throw requestError(400, "Tokens are already held for this gig.");
-    }
+    const escrow = escrowResult.rows[0] || null;
 
-    const debit = await client.query(
-      `UPDATE token_accounts SET balance = balance - $1
-       WHERE user_id = $2 AND balance >= $1
-       RETURNING balance`,
-      [gig.token_reward, gig.client_id]
-    );
-    if (debit.rowCount === 0) {
-      throw requestError(400, "Insufficient token balance to start this gig.");
-    }
+    if (!escrow) {
+      const debit = await client.query(
+        `UPDATE token_accounts SET balance = balance - $1
+         WHERE user_id = $2 AND balance >= $1
+         RETURNING balance`,
+        [gig.token_reward, gig.client_id]
+      );
+      if (debit.rowCount === 0) {
+        throw requestError(400, "Insufficient token balance to start this gig.");
+      }
 
-    await client.query(
-      `INSERT INTO token_escrows (gig_id, client_id, freelancer_id, amount, status)
-       VALUES ($1, $2, $3, $4, 'held')`,
-      [req.params.id, gig.client_id, freelancerId, gig.token_reward]
-    );
+      await client.query(
+        `INSERT INTO token_escrows (gig_id, client_id, freelancer_id, amount, status)
+         VALUES ($1, $2, $3, $4, 'held')`,
+        [req.params.id, gig.client_id, freelancerId, gig.token_reward]
+      );
+
+      await client.query(
+        `INSERT INTO token_transactions (type, from_user_id, to_user_id, gig_id, amount, note)
+         VALUES ('manual_adjustment', $1, NULL, $2, $3, $4)`,
+        [gig.client_id, gig.id, gig.token_reward, "Gig hold (legacy)"]
+      );
+    } else {
+      if (escrow.status !== "held") {
+        throw requestError(400, "Escrow is not in a hold state.");
+      }
+      if (Number(escrow.amount) !== Number(gig.token_reward)) {
+        throw requestError(400, "Escrow amount mismatch. Please edit the gig to refresh the hold.");
+      }
+      if (escrow.freelancer_id && escrow.freelancer_id !== freelancerId) {
+        throw requestError(400, "Tokens are already held for a different freelancer.");
+      }
+
+      await client.query(
+        `UPDATE token_escrows SET freelancer_id = $1 WHERE gig_id = $2`,
+        [freelancerId, req.params.id]
+      );
+    }
 
     // Accept this, reject others, update gig — all in sequence
     await client.query(`UPDATE gig_proposals SET status = 'accepted' WHERE id = $1`, [req.params.proposalId]);
@@ -592,6 +820,10 @@ router.post("/:id/confirm", auth, requireRole("client"), async (req, res, next) 
     const escrow = escrowResult.rows[0];
     if (!escrow) throw requestError(400, "No escrow found for this gig.");
     if (escrow.status !== "held") throw requestError(400, "Escrow is not in a releasable state.");
+    if (!gig.freelancer_id) throw requestError(400, "Gig has no assigned freelancer.");
+    if (escrow.freelancer_id && escrow.freelancer_id !== gig.freelancer_id) {
+      throw requestError(400, "Escrow is assigned to a different freelancer.");
+    }
 
     const payoutAmount = Number(escrow.amount);
     const dbQuery = client.query.bind(client);

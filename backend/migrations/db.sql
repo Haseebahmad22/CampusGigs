@@ -149,7 +149,7 @@ EXECUTE FUNCTION public.set_updated_at();
 CREATE TABLE IF NOT EXISTS public.token_escrows (
   gig_id UUID PRIMARY KEY REFERENCES public.gigs(id) ON DELETE CASCADE,
   client_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-  freelancer_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  freelancer_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
   amount INTEGER NOT NULL CHECK (amount > 0),
   status TEXT NOT NULL DEFAULT 'held' CHECK (status IN ('held', 'released', 'refunded')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

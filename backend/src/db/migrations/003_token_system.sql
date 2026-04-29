@@ -18,13 +18,16 @@ EXECUTE FUNCTION public.set_updated_at();
 CREATE TABLE IF NOT EXISTS token_escrows (
   gig_id UUID PRIMARY KEY REFERENCES gigs(id) ON DELETE CASCADE,
   client_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  freelancer_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  freelancer_id UUID REFERENCES users(id) ON DELETE CASCADE,
   amount INTEGER NOT NULL CHECK (amount > 0),
   status TEXT NOT NULL DEFAULT 'held' CHECK (status IN ('held', 'released', 'refunded')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   released_at TIMESTAMPTZ,
   refunded_at TIMESTAMPTZ
 );
+
+ALTER TABLE IF EXISTS token_escrows
+  ALTER COLUMN freelancer_id DROP NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_token_escrows_client ON token_escrows(client_id);
 CREATE INDEX IF NOT EXISTS idx_token_escrows_freelancer ON token_escrows(freelancer_id);
