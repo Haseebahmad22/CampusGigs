@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
+import Image from "next/image";
 import { Camera, X, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -12,6 +13,12 @@ interface AvatarUploadProps {
   onRemove: () => void;
   size?: "md" | "lg" | "xl";
 }
+
+const SIZE_PX: Record<"md" | "lg" | "xl", number> = {
+  md: 80,
+  lg: 112,
+  xl: 144,
+};
 
 export function AvatarUpload({
   currentUrl,
@@ -25,12 +32,7 @@ export function AvatarUpload({
   const [preview, setPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const sizeClasses = {
-    md: "w-20 h-20",
-    lg: "w-32 h-32",
-    xl: "w-40 h-40",
-  };
-
+  const px = SIZE_PX[size];
   const initials = userName
     .split(" ")
     .map((n) => n[0])
@@ -46,7 +48,6 @@ export function AvatarUpload({
         return;
       }
 
-      // Show preview immediately
       const reader = new FileReader();
       reader.onload = (e) => setPreview(e.target?.result as string);
       reader.readAsDataURL(file);
@@ -56,7 +57,8 @@ export function AvatarUpload({
         const supabase = createClient();
         const userId =
           typeof window !== "undefined"
-            ? JSON.parse(localStorage.getItem("campusgigs_user") || "{}").id || "demo"
+            ? JSON.parse(localStorage.getItem("campusgigs_user") || "{}").id ||
+              "demo"
             : "demo";
         const ext = file.name.split(".").pop();
         const fileName = `avatars/${userId}/${Date.now()}.${ext}`;
@@ -67,7 +69,6 @@ export function AvatarUpload({
 
         if (error) {
           console.error("Upload error:", error);
-          // Fallback: use the preview URL as the avatar for demo
           onUpload(preview || "");
           return;
         }
@@ -78,7 +79,6 @@ export function AvatarUpload({
 
         onUpload(publicUrl);
       } catch {
-        // In demo mode, just use the local preview
         if (preview) onUpload(preview);
       } finally {
         setUploading(false);
@@ -100,15 +100,15 @@ export function AvatarUpload({
   const displayUrl = preview || currentUrl;
 
   return (
-    <div className="flex flex-col items-center gap-3">
+    <div className="flex flex-col items-start gap-3">
       <div
         className={cn(
-          "relative rounded-full border-2 border-dashed transition-all duration-300 group cursor-pointer",
-          sizeClasses[size],
+          "relative rounded-sm border-2 border-dashed transition-colors duration-150 group cursor-pointer overflow-hidden",
           dragOver
-            ? "border-primary scale-105 shadow-lg shadow-primary/20"
-            : "border-border hover:border-primary/50"
+            ? "border-primary bg-primary/5"
+            : "border-rule hover:border-rule-strong"
         )}
+        style={{ width: px, height: px }}
         onDragOver={(e) => {
           e.preventDefault();
           setDragOver(true);
@@ -118,17 +118,23 @@ export function AvatarUpload({
         onClick={() => fileInputRef.current?.click()}
       >
         {displayUrl ? (
-          <img
+          <Image
             src={displayUrl}
             alt={userName}
-            className="w-full h-full rounded-full object-cover"
+            width={px}
+            height={px}
+            className="w-full h-full object-cover"
           />
         ) : (
-          <div className="w-full h-full rounded-full bg-linear-to-br from-primary/20 via-accent/20 to-secondary/20 flex items-center justify-center">
+          <div className="w-full h-full bg-surface-elevated flex items-center justify-center">
             <span
               className={cn(
-                "font-bold text-foreground/80",
-                size === "xl" ? "text-4xl" : size === "lg" ? "text-3xl" : "text-xl"
+                "font-serif text-foreground/80",
+                size === "xl"
+                  ? "text-4xl"
+                  : size === "lg"
+                    ? "text-3xl"
+                    : "text-xl"
               )}
             >
               {initials}
@@ -136,16 +142,14 @@ export function AvatarUpload({
           </div>
         )}
 
-        {/* Overlay */}
-        <div className="absolute inset-0 rounded-full bg-foreground/35 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+        <div className="absolute inset-0 bg-foreground/35 opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex items-center justify-center">
           {uploading ? (
-            <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            <div className="w-5 h-5 border-2 border-[#F7F4EC]/30 border-t-[#F7F4EC] rounded-full animate-spin" />
           ) : (
-            <Camera className="w-6 h-6 text-white" />
+            <Camera className="w-5 h-5 text-[#F7F4EC]" />
           )}
         </div>
 
-        {/* Remove button */}
         {displayUrl && (
           <button
             type="button"
@@ -154,9 +158,10 @@ export function AvatarUpload({
               setPreview(null);
               onRemove();
             }}
-            className="absolute -top-1 -right-1 w-7 h-7 rounded-full bg-error hover:bg-error/90 flex items-center justify-center text-white shadow-[0_2px_10px_rgba(0,0,0,0.14)] opacity-0 group-hover:opacity-100 transition-opacity"
+            className="absolute -top-1 -right-1 w-6 h-6 rounded-sm bg-error text-[#F7F4EC] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+            aria-label="Remove photo"
           >
-            <X className="w-3.5 h-3.5" />
+            <X className="w-3 h-3" />
           </button>
         )}
 
@@ -172,10 +177,10 @@ export function AvatarUpload({
         />
       </div>
 
-      <div className="flex items-center gap-1.5 text-xs text-muted">
+      <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-subtle inline-flex items-center gap-1.5">
         <Upload className="w-3 h-3" />
-        <span>Click or drag to upload</span>
-      </div>
+        Click or drag · JPG/PNG/WEBP · 5 MB
+      </span>
     </div>
   );
 }

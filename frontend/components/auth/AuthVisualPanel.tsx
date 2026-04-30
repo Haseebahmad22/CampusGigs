@@ -1,74 +1,89 @@
 "use client";
 
 import { motion } from "framer-motion";
-import Image from "next/image";
+import { Stamp } from "@/components/ui/stamp";
 
 interface Props {
-  imageSrc?: string;
+  kicker?: string;
+  headline?: string;
+  emphasis?: string;
 }
 
-export function AuthVisualPanel({ imageSrc }: Props) {
+const QUOTES = [
+  {
+    body: "I posted a poster design gig on a Tuesday. By Friday I'd shipped it, paid in tokens, and left a review.",
+    by: "Mira K.",
+    role: "CS · Sem 5 · Client",
+  },
+  {
+    body: "Three gigs in two months — built a portfolio that actually got me an internship interview.",
+    by: "Adi R.",
+    role: "Design · Sem 6 · Freelancer",
+  },
+  {
+    body: "It feels like a campus bulletin board, but the work is real.",
+    by: "Sana T.",
+    role: "Business · Sem 4 · Client",
+  },
+];
+
+export function AuthVisualPanel({
+  kicker = "Campus talent platform",
+  headline = "Where skills",
+  emphasis = "meet opportunity.",
+}: Props) {
   return (
     <div className="hidden lg:flex items-stretch p-5">
-      <div className="relative flex-1 rounded-[2.5rem] overflow-hidden border border-border shadow-[0_10px_28px_rgba(7,10,18,0.24)]">
+      <div className="relative flex-1 rounded-md border border-rule-strong bg-surface-elevated overflow-hidden">
+        {/* Editorial collage layout */}
+        <div className="absolute inset-0 p-12 flex flex-col">
+          <div className="flex items-start justify-between">
+            <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-subtle">
+              {kicker}
+            </span>
+            <Stamp variant="seal" tone="terracotta" size={80} rotation={-6} />
+          </div>
 
-        {/* Background image or gradient fallback */}
-        {imageSrc ? (
-          <Image
-            src={imageSrc}
-            alt=""
-            fill
-            className="object-cover"
-            priority
-          />
-        ) : (
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                "linear-gradient(150deg, #1f2638 0%, #263044 45%, #2b3550 100%)",
-            }}
-          />
-        )}
-
-        {/* Soft overlay to keep text readable over any photo */}
-        <div className="absolute inset-0 bg-background/45" />
-
-        {/* Subtle accent tint */}
-        <motion.div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background:
-              "radial-gradient(ellipse 80% 60% at 80% 18%, rgba(20,184,166,0.24) 0%, transparent 70%)",
-          }}
-          animate={{ opacity: [0.45, 0.75, 0.45] }}
-          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-        />
-
-        {/* Bottom fade for text legibility */}
-        <div
-          className="absolute bottom-0 left-0 right-0 h-2/5 pointer-events-none"
-          style={{
-            background:
-              "linear-gradient(to top, rgba(28,33,48,0.94) 0%, transparent 100%)",
-          }}
-        />
-
-        {/* Text overlay */}
-        <div className="absolute bottom-0 left-0 right-0 p-9 pb-10">
-          <p className="text-muted text-xs tracking-widest uppercase mb-2">
-            Campus Talent Platform
-          </p>
-          <h2
-            className="text-foreground text-3xl xl:text-4xl leading-tight"
-            style={{ fontFamily: "var(--font-display)" }}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: "spring", stiffness: 260, damping: 28, delay: 0.1 }}
+            className="mt-8"
           >
-            Where skills meet
-            <br />
-            opportunity.
-          </h2>
-        </div>
+            <h2 className="font-serif text-[2.6rem] xl:text-[3.4rem] leading-[1] tracking-tight text-foreground">
+              {headline}
+              <br />
+              <em className="italic text-primary">{emphasis}</em>
+            </h2>
+          </motion.div>
 
+          <div className="mt-8 grid grid-cols-1 gap-4">
+            {QUOTES.map((q, i) => (
+              <motion.div
+                key={q.by}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 260,
+                  damping: 28,
+                  delay: 0.25 + i * 0.08,
+                }}
+                className="border-t border-rule pt-4"
+              >
+                <p className="font-serif italic text-[15px] text-foreground leading-snug max-w-md">
+                  &ldquo;{q.body}&rdquo;
+                </p>
+                <div className="mt-2 flex items-baseline gap-3">
+                  <span className="text-[13px] text-foreground">{q.by}</span>
+                  <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-subtle">
+                    {q.role}
+                  </span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

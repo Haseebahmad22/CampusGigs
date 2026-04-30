@@ -2,210 +2,251 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import {
-  ArrowRight, FileText, Users, CheckCircle, Star, Briefcase, Coins,
-} from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { Stamp } from "@/components/ui/stamp";
 
 const fade = (delay = 0) => ({
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.6, delay, ease: [0.25, 0.1, 0.25, 1] },
+  initial: { opacity: 0, y: 16 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, margin: "-60px" },
+  transition: {
+    type: "spring" as const,
+    stiffness: 260,
+    damping: 28,
+    delay,
+  },
 });
 
-const stagger = {
-  animate: { transition: { staggerChildren: 0.1, delayChildren: 0.2 } },
-};
-
-const clientSteps = [
+const CLIENT_STEPS = [
   {
-    icon: FileText,
+    n: "01",
     title: "Post a gig",
-    desc: "Describe the work, set a token budget, and publish. Your gig is immediately visible to all freelancers on the platform.",
+    body: "Describe the work, set a token reward, attach reference files. Your gig is visible to every student on the platform within seconds.",
   },
   {
-    icon: Users,
+    n: "02",
     title: "Review proposals",
-    desc: "Freelancers submit proposals with cover letters. Browse their profiles, check ratings and completed work, then pick the best fit.",
+    body: "Freelancers send proposals with cover letters and rates. Browse profiles, ratings, and prior work — pick on craft, not refresh speed.",
   },
   {
-    icon: CheckCircle,
+    n: "03",
     title: "Confirm delivery",
-    desc: "Once the freelancer submits their work, review it and confirm completion. Tokens transfer and the gig is closed.",
+    body: "Once the freelancer submits, review the deliverables. Confirm completion and tokens transfer automatically.",
   },
   {
-    icon: Star,
+    n: "04",
     title: "Leave a review",
-    desc: "Rate the freelancer and leave feedback. Reviews build the reputation layer that makes the whole platform work.",
+    body: "Rate the freelancer, leave honest feedback. Reviews compound into the reputation that makes the whole marketplace work.",
   },
 ];
 
-const freelancerSteps = [
+const FREELANCER_STEPS = [
   {
-    icon: Briefcase,
+    n: "01",
     title: "Browse open gigs",
-    desc: "Search and filter gigs by keyword, reward, or recency. Find work that matches your skills and availability.",
+    body: "Filter by skill, reward, or recency. The feed reflects real work being posted right now on your campus.",
   },
   {
-    icon: FileText,
+    n: "02",
     title: "Submit a proposal",
-    desc: "Write a cover letter explaining why you're the right fit. One proposal per gig — make it count.",
+    body: "Write a focused cover letter. One proposal per gig — make it specific to the brief, not a template.",
   },
   {
-    icon: Coins,
+    n: "03",
     title: "Do the work",
-    desc: "Once accepted, complete the gig and mark it as done. The client reviews your submission and confirms delivery.",
+    body: "Once accepted, message the client, share files, mark complete. Scope and deliverables stay tied to the gig — never chasing email.",
   },
   {
-    icon: Star,
+    n: "04",
     title: "Build your reputation",
-    desc: "Every completed gig earns you tokens and a review. Your profile grows with real, verified work history.",
+    body: "Every closed gig earns tokens and a review. Your profile grows into verified, real-world work history.",
   },
 ];
+
+const navLinks = [
+  { label: "How it works", href: "/how-it-works", active: true },
+  { label: "Pricing", href: "/pricing", active: false },
+];
+
+function StepRow({
+  n,
+  title,
+  body,
+  delay,
+}: {
+  n: string;
+  title: string;
+  body: string;
+  delay: number;
+}) {
+  return (
+    <motion.div
+      {...fade(delay)}
+      className="grid grid-cols-12 gap-6 border-b border-rule py-8 last:border-b-0"
+    >
+      <div className="col-span-12 md:col-span-2">
+        <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-subtle">
+          {n}
+        </span>
+      </div>
+      <div className="col-span-12 md:col-span-10">
+        <h3 className="font-serif text-2xl md:text-3xl text-foreground">
+          {title}
+        </h3>
+        <p className="mt-3 text-[15px] text-muted leading-relaxed max-w-2xl">
+          {body}
+        </p>
+      </div>
+    </motion.div>
+  );
+}
 
 export default function HowItWorksPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Navbar */}
-      <div className="fixed top-5 left-0 right-0 z-50 px-5 sm:px-7">
-        <nav
-          className="h-16 rounded-2xl flex items-center justify-between px-6 sm:px-7 gap-6"
-          style={{
-            background: "rgba(255,255,255,0.86)",
-            backdropFilter: "blur(10px)",
-            WebkitBackdropFilter: "blur(10px)",
-            border: "1px solid rgba(0,0,0,0.07)",
-            boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
-          }}
-        >
+      <nav className="sticky top-0 z-50 h-14 w-full border-b border-rule bg-background/95 backdrop-blur-[2px]">
+        <div className="mx-auto flex h-full max-w-6xl items-center justify-between gap-6 px-5 sm:px-8">
           <Link
             href="/"
-            className="text-[19px] text-foreground shrink-0 italic"
-            style={{ fontFamily: "var(--font-logo)" }}
+            className="font-serif italic text-[22px] leading-none text-foreground shrink-0"
           >
             CampusGigs
           </Link>
-          <div className="hidden md:flex items-center gap-8">
-            <Link href="/signin" className="text-[13.5px] text-muted hover:text-foreground transition-colors">Browse Gigs</Link>
-            <Link href="/how-it-works" className="text-[13.5px] text-foreground font-medium">How it Works</Link>
-            <Link href="/pricing" className="text-[13.5px] text-muted hover:text-foreground transition-colors">Pricing</Link>
-          </div>
-          <div className="flex items-center gap-4 shrink-0">
-            <Link href="/signin" className="text-[13.5px] text-muted hover:text-foreground transition-colors">Log in</Link>
-            <Link href="/signup" className="text-[13.5px] font-semibold bg-primary text-white px-5 py-2 rounded-md hover:bg-primary-dark transition-colors">Sign up</Link>
-          </div>
-        </nav>
-      </div>
-
-      <main className="max-w-none mx-auto px-6 sm:px-8 pt-36 sm:pt-44 pb-20">
-        {/* Header */}
-        <motion.div {...fade(0.1)} className="text-center mb-16">
-          <span className="inline-flex items-center px-3.5 py-1.5 rounded-full border border-border bg-surface text-xs text-muted tracking-wide uppercase">
-            How it works
-          </span>
-          <h1
-            className="mt-5 text-3xl sm:text-[2.8rem] leading-tight tracking-tight"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
-            From posting to payment,
-            <br />
-            <span className="text-primary">in four simple steps.</span>
-          </h1>
-          <p className="mt-4 text-base text-muted max-w-lg mx-auto">
-            Whether you&apos;re hiring or freelancing, the flow is designed to be fast, transparent, and fair.
-          </p>
-        </motion.div>
-
-        {/* For Clients */}
-        <motion.section
-          variants={stagger}
-          initial="initial"
-          whileInView="animate"
-          viewport={{ once: true, margin: "-60px" }}
-          className="mb-20"
-        >
-          <motion.h2 {...fade()} className="text-lg font-semibold text-foreground mb-6">
-            For clients
-          </motion.h2>
-          <div className="grid sm:grid-cols-2 gap-4">
-            {clientSteps.map((step, i) => (
-              <motion.div
-                key={step.title}
-                {...fade(i * 0.06)}
-                className="relative rounded-xl border border-border bg-surface p-5 hover:border-primary/20 transition-colors duration-200"
+          <div className="hidden md:flex items-center gap-6">
+            {navLinks.map((link) => (
+              <Link
+                key={link.label}
+                href={link.href}
+                className={`text-[14px] py-4 -mb-px border-b-2 transition-colors ${
+                  link.active
+                    ? "text-foreground border-primary"
+                    : "text-muted hover:text-foreground border-transparent"
+                }`}
               >
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-9 h-9 rounded-lg bg-primary/8 border border-primary/15 flex items-center justify-center">
-                    <step.icon className="w-4 h-4 text-primary" />
-                  </div>
-                  <span className="text-[11px] font-mono text-muted uppercase tracking-wider">Step {i + 1}</span>
-                </div>
-                <h3 className="text-sm font-semibold text-foreground mb-1">{step.title}</h3>
-                <p className="text-sm text-muted leading-relaxed">{step.desc}</p>
-              </motion.div>
+                {link.label}
+              </Link>
             ))}
           </div>
-        </motion.section>
-
-        {/* For Freelancers */}
-        <motion.section
-          variants={stagger}
-          initial="initial"
-          whileInView="animate"
-          viewport={{ once: true, margin: "-60px" }}
-          className="mb-20"
-        >
-          <motion.h2 {...fade()} className="text-lg font-semibold text-foreground mb-6">
-            For freelancers
-          </motion.h2>
-          <div className="grid sm:grid-cols-2 gap-4">
-            {freelancerSteps.map((step, i) => (
-              <motion.div
-                key={step.title}
-                {...fade(i * 0.06)}
-                className="relative rounded-xl border border-border bg-surface p-5 hover:border-secondary/20 transition-colors duration-200"
-              >
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-9 h-9 rounded-lg bg-secondary/8 border border-secondary/15 flex items-center justify-center">
-                    <step.icon className="w-4 h-4 text-secondary" />
-                  </div>
-                  <span className="text-[11px] font-mono text-muted uppercase tracking-wider">Step {i + 1}</span>
-                </div>
-                <h3 className="text-sm font-semibold text-foreground mb-1">{step.title}</h3>
-                <p className="text-sm text-muted leading-relaxed">{step.desc}</p>
-              </motion.div>
-            ))}
-          </div>
-        </motion.section>
-
-        {/* CTA */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          className="rounded-2xl border border-border bg-surface p-8 sm:p-10 text-center"
-        >
-          <h2 className="text-xl font-semibold text-foreground">Ready to jump in?</h2>
-          <p className="text-sm text-muted mt-1.5 max-w-sm mx-auto">Create an account and start in under a minute.</p>
-          <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+          <div className="flex items-center gap-4">
+            <Link
+              href="/signin"
+              className="text-[14px] text-muted hover:text-foreground transition-colors"
+            >
+              Sign in
+            </Link>
             <Link
               href="/signup"
-              className="group flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-white font-semibold text-sm hover:bg-primary-dark transition-all"
+              className="text-[13px] font-medium bg-primary text-[#F7F4EC] px-4 py-2 rounded-md hover:bg-primary-dark transition-colors"
             >
-              Sign up free <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
-            </Link>
-            <Link href="/signin" className="px-6 py-3 rounded-lg border border-border text-sm font-semibold text-foreground hover:bg-surface-elevated transition-colors">
-              Log in
+              Create account
             </Link>
           </div>
-        </motion.div>
+        </div>
+      </nav>
+
+      <main className="mx-auto max-w-6xl px-5 sm:px-8 pt-16 pb-24">
+        {/* Header */}
+        <section className="grid grid-cols-12 gap-6 items-end pb-16 border-b border-rule">
+          <div className="col-span-12 md:col-span-9">
+            <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-subtle">
+              How it works
+            </span>
+            <h1 className="mt-5 font-serif text-[3rem] sm:text-[4rem] leading-[1] tracking-tight text-foreground">
+              From posting to payment,
+              <br />
+              <em className="italic text-primary">in four simple steps.</em>
+            </h1>
+            <p className="mt-6 max-w-xl text-[16px] text-muted leading-relaxed">
+              Hiring or freelancing — the flow is the same shape. Fast,
+              transparent, fair. No recruiters, no hidden fees, no platform
+              tax.
+            </p>
+          </div>
+          <div className="col-span-12 md:col-span-3 flex md:justify-end">
+            <Stamp variant="seal" tone="terracotta" size={120} rotation={-8} />
+          </div>
+        </section>
+
+        {/* For clients */}
+        <section className="pt-16">
+          <div className="flex items-end justify-between gap-4 mb-4 pb-3 border-b border-rule">
+            <div>
+              <span className="block font-mono text-[10px] uppercase tracking-[0.2em] text-subtle mb-1.5">
+                Section I
+              </span>
+              <h2 className="font-serif text-3xl text-foreground">For clients</h2>
+            </div>
+            <span className="hidden md:block font-mono text-[11px] uppercase tracking-[0.18em] text-subtle">
+              Hire student talent
+            </span>
+          </div>
+          {CLIENT_STEPS.map((step, i) => (
+            <StepRow key={step.n} {...step} delay={i * 0.06} />
+          ))}
+        </section>
+
+        {/* For freelancers */}
+        <section className="pt-16">
+          <div className="flex items-end justify-between gap-4 mb-4 pb-3 border-b border-rule">
+            <div>
+              <span className="block font-mono text-[10px] uppercase tracking-[0.2em] text-subtle mb-1.5">
+                Section II
+              </span>
+              <h2 className="font-serif text-3xl text-foreground">
+                For freelancers
+              </h2>
+            </div>
+            <span className="hidden md:block font-mono text-[11px] uppercase tracking-[0.18em] text-subtle">
+              Build your campus reputation
+            </span>
+          </div>
+          {FREELANCER_STEPS.map((step, i) => (
+            <StepRow key={step.n} {...step} delay={i * 0.06} />
+          ))}
+        </section>
+
+        {/* CTA */}
+        <section className="border-t border-rule mt-16 pt-16">
+          <div className="grid grid-cols-12 gap-6 items-center">
+            <h2 className="col-span-12 md:col-span-8 font-serif text-3xl md:text-5xl tracking-tight text-foreground">
+              Ready to jump in?
+            </h2>
+            <div className="col-span-12 md:col-span-4 flex flex-wrap gap-3 md:justify-end">
+              <Link
+                href="/signup"
+                className="group inline-flex items-center gap-2 px-6 py-3 rounded-md bg-primary text-[#F7F4EC] font-medium text-[14px] hover:bg-primary-dark transition-colors"
+              >
+                Create account
+                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+              </Link>
+              <Link
+                href="/signin"
+                className="inline-flex items-center px-6 py-3 rounded-md border border-rule-strong text-[14px] font-medium text-foreground hover:bg-surface-elevated transition-colors"
+              >
+                Sign in
+              </Link>
+            </div>
+          </div>
+        </section>
       </main>
 
-      <footer className="py-6 text-center text-xs text-subtle border-t border-border/80">
-        <div className="flex items-center justify-center gap-6">
+      <footer className="border-t border-rule py-8">
+        <div className="mx-auto max-w-6xl px-5 sm:px-8 flex items-center justify-between gap-4 font-mono text-[11px] uppercase tracking-[0.16em] text-subtle">
           <span>&copy; {new Date().getFullYear()} CampusGigs</span>
-          <Link href="/how-it-works" className="hover:text-foreground transition-colors">How it Works</Link>
-          <Link href="/pricing" className="hover:text-foreground transition-colors">Pricing</Link>
+          <div className="flex items-center gap-6">
+            <Link
+              href="/how-it-works"
+              className="hover:text-foreground transition-colors"
+            >
+              How it works
+            </Link>
+            <Link
+              href="/pricing"
+              className="hover:text-foreground transition-colors"
+            >
+              Pricing
+            </Link>
+          </div>
         </div>
       </footer>
     </div>

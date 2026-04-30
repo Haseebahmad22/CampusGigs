@@ -10,29 +10,25 @@ import {
   GraduationCap,
   X,
   SlidersHorizontal,
-  Users,
-  Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AppNavbar } from "@/components/layout/AppNavbar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Select } from "@/components/ui/select";
+import { Avatar } from "@/components/ui/avatar";
+import { SectionHeading } from "@/components/ui/section-heading";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Label } from "@/components/ui/label";
 import type { FreelancerProfile } from "@/lib/types";
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.06 } },
-};
-const cardVariants = {
-  hidden: { opacity: 0, y: 12 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
-};
 
 export default function BrowseFreelancersPage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
-  const [sortBy, setSortBy] = useState<"rating" | "jobs" | "rate_low" | "rate_high">("rating");
+  const [sortBy, setSortBy] = useState<
+    "rating" | "jobs" | "rate_low" | "rate_high"
+  >("rating");
   const [showFilters, setShowFilters] = useState(false);
   const [availabilityFilter, setAvailabilityFilter] = useState<string>("all");
   const [freelancers, setFreelancers] = useState<FreelancerProfile[]>([]);
@@ -43,7 +39,8 @@ export default function BrowseFreelancersPage() {
   useEffect(() => {
     const loadCategories = async () => {
       try {
-        const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+        const apiBaseUrl =
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
         const response = await fetch(`${apiBaseUrl}/api/skills/categories`);
         const payload = await response.json();
 
@@ -64,7 +61,8 @@ export default function BrowseFreelancersPage() {
         setLoading(true);
         setError("");
 
-        const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+        const apiBaseUrl =
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
         const params = new URLSearchParams({
           sort: sortBy,
           page: "1",
@@ -83,7 +81,9 @@ export default function BrowseFreelancersPage() {
           params.set("availability", availabilityFilter);
         }
 
-        const response = await fetch(`${apiBaseUrl}/api/freelancers?${params.toString()}`);
+        const response = await fetch(
+          `${apiBaseUrl}/api/freelancers?${params.toString()}`
+        );
         const payload = await response.json();
 
         if (!response.ok) {
@@ -104,312 +104,277 @@ export default function BrowseFreelancersPage() {
     return () => clearTimeout(timeout);
   }, [availabilityFilter, searchQuery, selectedCategory, sortBy]);
 
+  const activeFilterCount = [
+    selectedCategory,
+    availabilityFilter !== "all" ? availabilityFilter : null,
+  ].filter(Boolean).length;
+
   return (
     <div className="min-h-screen bg-background">
       <AppNavbar />
 
-      {/* Search Header */}
-      <div className="border-b border-border bg-surface/40">
-        <div className="max-w-none mx-auto px-5 pt-24 pb-6">
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
+      <main className="mx-auto max-w-6xl px-5 sm:px-8 py-10 lg:py-14">
+        {/* Header */}
+        <SectionHeading title="Find talent" kicker="Client area · Discover" />
+
+        {/* Search bar + filter toggle */}
+        <div className="mt-6 flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 text-subtle" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by name, skill, or university…"
+              className="w-full pl-7 pr-8 h-11 bg-transparent border-0 border-b border-rule rounded-none text-[15px] text-foreground placeholder:text-subtle focus:outline-none focus:border-primary transition-colors"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-0 top-1/2 -translate-y-1/2 p-1 text-subtle hover:text-foreground transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => setShowFilters(!showFilters)}
+            className={cn(showFilters && "border-primary text-primary")}
           >
-            <div className="flex items-center gap-3 mb-1">
-              <Users className="w-5 h-5 text-primary" />
-              <h1 className="text-xl sm:text-2xl font-bold text-foreground">
-                Find Talent
-              </h1>
-            </div>
-            <p className="text-muted text-sm mb-5">
-              Browse verified campus freelancers ready to work on your project
-            </p>
+            <SlidersHorizontal className="w-4 h-4" />
+            Filters
+            {activeFilterCount > 0 && (
+              <span className="ml-1 inline-flex w-5 h-5 items-center justify-center rounded-sm bg-primary text-[#F7F4EC] font-mono text-[10px] tabular-nums">
+                {activeFilterCount}
+              </span>
+            )}
+          </Button>
+        </div>
 
-            {/* Search bar */}
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="relative flex-1">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-muted" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search by name, skill, or university..."
-                  className="w-full pl-11 pr-4 py-3 rounded-lg border border-border bg-surface text-foreground placeholder:text-muted/60 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/50 transition-all text-sm"
+        {/* Filters panel */}
+        {showFilters && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="mt-4 rounded-md border border-rule bg-surface-elevated/40 p-5"
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>Category</Label>
+                <Select
+                  value={selectedCategory}
+                  onValueChange={setSelectedCategory}
+                  ariaLabel="Category"
+                  options={[
+                    { value: "", label: "All categories" },
+                    ...categories.map((cat) => ({
+                      value: cat,
+                      label: cat,
+                    })),
+                  ]}
                 />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-surface-elevated flex items-center justify-center hover:bg-border transition-colors"
-                  >
-                    <X className="w-3 h-3 text-muted" />
-                  </button>
-                )}
               </div>
-              <Button
-                variant="outline"
-                size="md"
-                onClick={() => setShowFilters(!showFilters)}
-                className={cn("shrink-0", showFilters && "border-primary/50 text-primary")}
-              >
-                <SlidersHorizontal className="w-4 h-4 mr-2" />
-                Filters
-                {(selectedCategory || availabilityFilter !== "all") && (
-                  <span className="ml-1.5 w-5 h-5 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold">
-                    {[selectedCategory, availabilityFilter !== "all"].filter(Boolean).length}
-                  </span>
-                )}
-              </Button>
+              <div className="space-y-2">
+                <Label>Sort by</Label>
+                <Select
+                  value={sortBy}
+                  onValueChange={(v) => setSortBy(v as typeof sortBy)}
+                  ariaLabel="Sort by"
+                  options={[
+                    { value: "rating", label: "Highest rating" },
+                    { value: "jobs", label: "Most jobs" },
+                    { value: "rate_low", label: "Rate: low to high" },
+                    { value: "rate_high", label: "Rate: high to low" },
+                  ]}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Availability</Label>
+                <Select
+                  value={availabilityFilter}
+                  onValueChange={setAvailabilityFilter}
+                  ariaLabel="Availability"
+                  options={[
+                    { value: "all", label: "All" },
+                    { value: "available", label: "Available now" },
+                    { value: "busy", label: "Busy" },
+                  ]}
+                />
+              </div>
             </div>
 
-            {/* Filters panel */}
-            {showFilters && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                className="mt-4 p-4 rounded-xl border border-border bg-surface space-y-4"
-              >
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="flex-1 space-y-1.5">
-                    <label className="text-xs font-medium text-muted">Category</label>
-                    <select
-                      value={selectedCategory}
-                      onChange={(e) => setSelectedCategory(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-lg border border-border bg-surface-elevated text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
-                    >
-                      <option value="">All Categories</option>
-                      {categories.map((cat) => (
-                        <option key={cat} value={cat}>{cat}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="flex-1 space-y-1.5">
-                    <label className="text-xs font-medium text-muted">Sort by</label>
-                    <select
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-                      className="w-full px-3 py-2.5 rounded-lg border border-border bg-surface-elevated text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
-                    >
-                      <option value="rating">Highest Rating</option>
-                      <option value="jobs">Most Jobs Completed</option>
-                      <option value="rate_low">Rate: Low to High</option>
-                      <option value="rate_high">Rate: High to Low</option>
-                    </select>
-                  </div>
-                  <div className="flex-1 space-y-1.5">
-                    <label className="text-xs font-medium text-muted">Availability</label>
-                    <select
-                      value={availabilityFilter}
-                      onChange={(e) => setAvailabilityFilter(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-lg border border-border bg-surface-elevated text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
-                    >
-                      <option value="all">All</option>
-                      <option value="available">Available Now</option>
-                      <option value="busy">Busy</option>
-                    </select>
-                  </div>
-                </div>
-
-                {(selectedCategory || availabilityFilter !== "all") && (
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs text-muted">Active:</span>
-                    {selectedCategory && (
-                      <Badge variant="primary" size="sm">
-                        {selectedCategory}
-                        <button onClick={() => setSelectedCategory("")} className="ml-1">
-                          x
-                        </button>
-                      </Badge>
-                    )}
-                    {availabilityFilter !== "all" && (
-                      <Badge variant="success" size="sm">
-                        {availabilityFilter}
-                        <button onClick={() => setAvailabilityFilter("all")} className="ml-1">
-                          x
-                        </button>
-                      </Badge>
-                    )}
+            {activeFilterCount > 0 && (
+              <div className="mt-4 flex items-center gap-2 flex-wrap">
+                <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-subtle">
+                  Active
+                </span>
+                {selectedCategory && (
+                  <Badge variant="primary">
+                    {selectedCategory}
                     <button
-                      onClick={() => {
-                        setSelectedCategory("");
-                        setAvailabilityFilter("all");
-                      }}
-                      className="text-xs text-error hover:underline"
+                      onClick={() => setSelectedCategory("")}
+                      className="ml-1.5"
+                      aria-label={`Remove ${selectedCategory}`}
                     >
-                      Clear all
+                      ×
                     </button>
-                  </div>
+                  </Badge>
                 )}
-              </motion.div>
+                {availabilityFilter !== "all" && (
+                  <Badge variant="success">
+                    {availabilityFilter}
+                    <button
+                      onClick={() => setAvailabilityFilter("all")}
+                      className="ml-1.5"
+                      aria-label="Clear availability"
+                    >
+                      ×
+                    </button>
+                  </Badge>
+                )}
+                <button
+                  onClick={() => {
+                    setSelectedCategory("");
+                    setAvailabilityFilter("all");
+                  }}
+                  className="font-mono text-[10px] uppercase tracking-[0.14em] text-error hover:underline"
+                >
+                  Clear all
+                </button>
+              </div>
             )}
           </motion.div>
-        </div>
-      </div>
+        )}
 
-      {/* Results */}
-      <div className="max-w-none mx-auto px-5 py-5">
-        <div className="flex items-center justify-between mb-4">
-          <p className="text-sm text-muted">
-            <span className="font-semibold text-foreground">
-              {freelancers.length}
-            </span>{" "}
-            freelancer{freelancers.length !== 1 ? "s" : ""} found
-          </p>
-        </div>
+        {/* Result count */}
+        <p className="mt-6 font-mono text-[11px] uppercase tracking-[0.18em] text-subtle tabular-nums">
+          {freelancers.length} freelancer{freelancers.length !== 1 ? "s" : ""}
+        </p>
 
-        {error && <p className="text-sm text-error mb-3">{error}</p>}
+        {error && <p className="mt-4 text-sm text-error">{error}</p>}
 
         {loading && (
-          <div className="py-10 flex items-center justify-center">
-            <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-          </div>
+          <p className="mt-10 text-center font-mono text-[11px] uppercase tracking-[0.2em] text-subtle">
+            Loading…
+          </p>
         )}
 
         {!loading && freelancers.length === 0 ? (
-          <div className="py-20 text-center">
-            <Search className="w-10 h-10 text-muted/30 mx-auto mb-3" />
-            <p className="text-lg font-semibold text-foreground">No freelancers found</p>
-            <p className="text-sm text-muted mt-1">
-              Try adjusting your search or filters
-            </p>
+          <div className="mt-10">
+            <EmptyState
+              title="No freelancers found."
+              description="Try adjusting your search or filters."
+            />
           </div>
         ) : (
           <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            className="space-y-3"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
           >
-            {freelancers.map((freelancer) => {
-              const initials = freelancer.fullName
-                .split(" ")
-                .map((n) => n[0])
-                .join("")
-                .toUpperCase()
-                .slice(0, 2);
-
-              return (
-                <motion.div
-                  key={freelancer.id}
-                  variants={cardVariants}
-                  className="rounded-lg border border-border bg-surface hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 group cursor-pointer"
-                  onClick={() =>
-                    router.push(`/freelancer/profile/${freelancer.userId}`)
-                  }
-                >
-                  <div className="p-5">
-                    <div className="flex gap-4">
-                      {/* Avatar */}
-                      <div className="shrink-0">
-                        <div className="relative w-14 h-14 rounded-full overflow-hidden bg-linear-to-br from-primary/15 via-accent/15 to-secondary/15">
-                          {freelancer.avatarUrl ? (
-                            <img
-                              src={freelancer.avatarUrl}
-                              alt={freelancer.fullName}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <span className="text-lg font-bold text-foreground/60">
-                                {initials}
-                              </span>
-                            </div>
-                          )}
-                          {/* Availability dot */}
-                          <div
-                            className={cn(
-                              "absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-surface",
-                              freelancer.availability === "available" && "bg-success",
-                              freelancer.availability === "busy" && "bg-warning",
-                              freelancer.availability === "away" && "bg-muted",
-                              freelancer.availability === "not_available" && "bg-error"
-                            )}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1">
-                          <div>
-                            <div className="flex items-center gap-1.5">
-                              <h3 className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">
-                                {freelancer.fullName}
-                              </h3>
-                              {freelancer.profileCompletionPct >= 80 && (
-                                <Shield className="w-3.5 h-3.5 text-secondary" />
-                              )}
-                            </div>
-                            <p className="text-sm text-muted mt-0.5">
-                              {freelancer.headline}
-                            </p>
-                          </div>
-
-                          {/* Rate */}
-                          {freelancer.hourlyRate && (
-                            <div className="text-right shrink-0">
-                              <span className="text-base font-bold text-primary">
-                                {freelancer.hourlyRate} tok
-                              </span>
-                              <span className="text-xs text-muted">/hr</span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Rating + Meta */}
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs text-muted">
-                          <span className="flex items-center gap-1">
-                            <Star className="w-3 h-3 text-warning fill-warning" />
-                            <span className="font-bold text-foreground">
-                              {freelancer.averageRating.toFixed(1)}
-                            </span>
-                            ({freelancer.totalJobsCompleted} jobs)
-                          </span>
-                          {freelancer.location && (
-                            <span className="flex items-center gap-1">
-                              <MapPin className="w-3 h-3" />
-                              {freelancer.location}
-                            </span>
-                          )}
-                          {freelancer.university && (
-                            <span className="flex items-center gap-1">
-                              <GraduationCap className="w-3 h-3" />
-                              {freelancer.university}
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Bio */}
-                        <p className="text-sm text-muted mt-2 line-clamp-2 leading-relaxed">
-                          {freelancer.bio}
-                        </p>
-
-                        {/* Skills - Upwork-style flat pills */}
-                        <div className="flex flex-wrap gap-1.5 mt-3">
-                          {freelancer.skills.slice(0, 5).map((skill) => (
-                            <span
-                              key={skill.id}
-                              className="px-2.5 py-1 rounded-full bg-surface-elevated border border-border text-xs text-muted hover:text-foreground transition-colors"
-                            >
-                              {skill.skillName}
-                            </span>
-                          ))}
-                          {freelancer.skills.length > 5 && (
-                            <span className="px-2.5 py-1 rounded-full bg-primary/5 border border-primary/15 text-xs font-medium text-primary">
-                              +{freelancer.skills.length - 5} more
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
+            {freelancers.map((freelancer, idx) => (
+              <motion.button
+                key={freelancer.id}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 260,
+                  damping: 28,
+                  delay: Math.min(idx * 0.04, 0.32),
+                }}
+                onClick={() =>
+                  router.push(`/freelancer/profile/${freelancer.userId}`)
+                }
+                className="group text-left rounded-md border border-border bg-surface p-5 hover:border-rule-strong hover:bg-surface-elevated transition-colors"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="relative shrink-0">
+                    <Avatar
+                      src={freelancer.avatarUrl}
+                      fallback={freelancer.fullName}
+                      size="lg"
+                      variant="square"
+                      verified={freelancer.profileCompletionPct >= 80}
+                    />
+                    <span
+                      className={cn(
+                        "absolute -bottom-0.5 -left-0.5 w-3 h-3 rounded-full border-2 border-surface",
+                        freelancer.availability === "available" && "bg-success",
+                        freelancer.availability === "busy" && "bg-warning",
+                        freelancer.availability === "away" && "bg-muted",
+                        freelancer.availability === "not_available" && "bg-error"
+                      )}
+                    />
                   </div>
-                </motion.div>
-              );
-            })}
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-serif text-lg text-foreground group-hover:text-primary transition-colors leading-tight">
+                      {freelancer.fullName}
+                    </h3>
+                    <p className="mt-1 text-[13px] text-muted line-clamp-1">
+                      {freelancer.headline}
+                    </p>
+                    {freelancer.hourlyRate ? (
+                      <p className="mt-2 font-mono text-[11px] uppercase tracking-[0.14em] text-subtle">
+                        <span className="text-foreground tabular-nums">
+                          {freelancer.hourlyRate}
+                        </span>{" "}
+                        tok / hr
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-rule flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[11px] uppercase tracking-[0.12em] text-subtle">
+                  <span className="inline-flex items-center gap-1">
+                    <Star className="w-3 h-3 text-accent fill-accent" />
+                    <span className="text-foreground tabular-nums">
+                      {freelancer.averageRating.toFixed(1)}
+                    </span>
+                    <span className="tabular-nums">
+                      ({freelancer.totalJobsCompleted})
+                    </span>
+                  </span>
+                  {freelancer.location && (
+                    <span className="inline-flex items-center gap-1">
+                      <MapPin className="w-3 h-3" />
+                      {freelancer.location}
+                    </span>
+                  )}
+                  {freelancer.university && (
+                    <span className="inline-flex items-center gap-1 truncate">
+                      <GraduationCap className="w-3 h-3" />
+                      <span className="truncate">{freelancer.university}</span>
+                    </span>
+                  )}
+                </div>
+
+                <p className="mt-3 text-[13px] text-muted line-clamp-2 leading-relaxed">
+                  {freelancer.bio}
+                </p>
+
+                <div className="mt-4 flex flex-wrap gap-1.5">
+                  {freelancer.skills.slice(0, 4).map((skill) => (
+                    <span
+                      key={skill.id}
+                      className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted border border-rule rounded-sm px-1.5 py-0.5"
+                    >
+                      {skill.skillName}
+                    </span>
+                  ))}
+                  {freelancer.skills.length > 4 && (
+                    <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-primary border border-primary/40 rounded-sm px-1.5 py-0.5">
+                      +{freelancer.skills.length - 4}
+                    </span>
+                  )}
+                </div>
+              </motion.button>
+            ))}
           </motion.div>
         )}
-      </div>
+      </main>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -8,11 +8,88 @@ import {
   ChevronDown,
   ChevronRight,
   Check,
-  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SKILL_CATEGORIES, searchSkills, ALL_SKILLS } from "@/lib/data/skills";
 import type { FreelancerSkill } from "@/lib/types";
+
+const PROFICIENCY_OPTIONS: {
+  value: FreelancerSkill["proficiencyLevel"];
+  short: string;
+  label: string;
+}[] = [
+  { value: "beginner", short: "BGN", label: "Beginner" },
+  { value: "intermediate", short: "INT", label: "Intermediate" },
+  { value: "expert", short: "EXP", label: "Expert" },
+];
+
+function ProficiencyPicker({
+  value,
+  onChange,
+}: {
+  value: FreelancerSkill["proficiencyLevel"];
+  onChange: (v: FreelancerSkill["proficiencyLevel"]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const current = PROFICIENCY_OPTIONS.find((o) => o.value === value)!;
+
+  useEffect(() => {
+    if (!open) return;
+    const onClick = (e: MouseEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    window.addEventListener("mousedown", onClick);
+    return () => window.removeEventListener("mousedown", onClick);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative ml-1">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        title="Proficiency level"
+        className="flex items-center gap-0.5 font-mono text-[10px] uppercase tracking-[0.16em] text-subtle hover:text-foreground transition-colors"
+      >
+        {current.short}
+        <ChevronDown
+          className={cn("size-2.5 transition-transform", open && "rotate-180")}
+        />
+      </button>
+      {open ? (
+        <ul
+          role="listbox"
+          className="absolute right-0 top-full z-50 mt-1.5 w-32 overflow-hidden rounded-md border border-rule-strong bg-surface p-1 shadow-[0_2px_0_0_rgba(196,187,161,0.5)]"
+        >
+          {PROFICIENCY_OPTIONS.map((opt) => {
+            const isSelected = opt.value === value;
+            return (
+              <li
+                key={opt.value}
+                role="option"
+                aria-selected={isSelected}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  onChange(opt.value);
+                  setOpen(false);
+                }}
+                className={cn(
+                  "flex cursor-pointer items-center justify-between rounded-sm px-2.5 py-1.5 text-xs transition-colors",
+                  isSelected
+                    ? "bg-surface-elevated text-foreground font-medium"
+                    : "text-foreground hover:bg-surface-elevated"
+                )}
+              >
+                <span>{opt.label}</span>
+                {isSelected ? <Check className="size-3 text-primary" /> : null}
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
 
 interface SkillsSelectorProps {
   selectedSkills: FreelancerSkill[];
@@ -26,7 +103,9 @@ export function SkillsSelector({
   maxSkills = 15,
 }: SkillsSelectorProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
+    new Set()
+  );
   const [activeTab, setActiveTab] = useState<"browse" | "search">("browse");
 
   const selectedIds = useMemo(
@@ -89,43 +168,35 @@ export function SkillsSelector({
   );
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {/* Selected skills */}
       {selectedSkills.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-3">
-            <p className="text-sm font-medium text-foreground">
-              Selected ({selectedSkills.length}/{maxSkills})
-            </p>
+            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-subtle">
+              Selected · {selectedSkills.length} / {maxSkills}
+            </span>
           </div>
           <div className="flex flex-wrap gap-2">
             {selectedSkills.map((skill) => (
               <div
                 key={skill.skillId}
-                className="flex items-center gap-1 pl-3 pr-1.5 py-1 rounded-full border border-border bg-surface-elevated text-sm"
+                className="flex items-center gap-2 pl-3 pr-1.5 py-1.5 rounded-sm border border-rule-strong bg-surface-elevated"
               >
-                <span className="text-foreground font-medium text-xs">{skill.skillName}</span>
-                <select
+                <span className="text-foreground text-[13px]">
+                  {skill.skillName}
+                </span>
+                <ProficiencyPicker
                   value={skill.proficiencyLevel}
-                  onChange={(e) =>
-                    updateProficiency(
-                      skill.skillId,
-                      e.target.value as FreelancerSkill["proficiencyLevel"]
-                    )
-                  }
-                  className="bg-transparent text-[10px] text-muted border-none outline-none cursor-pointer appearance-none font-medium uppercase tracking-wider ml-1"
-                  title="Proficiency level"
-                >
-                  <option value="beginner">BGN</option>
-                  <option value="intermediate">INT</option>
-                  <option value="expert">EXP</option>
-                </select>
+                  onChange={(v) => updateProficiency(skill.skillId, v)}
+                />
                 <button
                   type="button"
                   onClick={() => removeSkill(skill.skillId)}
-                  className="w-5 h-5 rounded-full flex items-center justify-center hover:bg-border transition-colors"
+                  className="w-5 h-5 rounded-sm flex items-center justify-center hover:bg-rule transition-colors"
+                  aria-label={`Remove ${skill.skillName}`}
                 >
-                  <X className="w-3 h-3 text-muted" />
+                  <X className="w-3 h-3 text-subtle" />
                 </button>
               </div>
             ))}
@@ -134,12 +205,15 @@ export function SkillsSelector({
       )}
 
       {/* Tab toggle */}
-      <div className="flex items-center gap-0 border-b border-border">
+      <div className="flex items-center gap-0 border-b border-rule">
         <button
           type="button"
-          onClick={() => { setActiveTab("browse"); setSearchQuery(""); }}
+          onClick={() => {
+            setActiveTab("browse");
+            setSearchQuery("");
+          }}
           className={cn(
-            "px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors",
+            "px-4 py-2.5 text-[14px] border-b-2 -mb-px transition-colors",
             activeTab === "browse"
               ? "border-primary text-foreground"
               : "border-transparent text-muted hover:text-foreground"
@@ -151,7 +225,7 @@ export function SkillsSelector({
           type="button"
           onClick={() => setActiveTab("search")}
           className={cn(
-            "px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors",
+            "px-4 py-2.5 text-[14px] border-b-2 -mb-px transition-colors",
             activeTab === "search"
               ? "border-primary text-foreground"
               : "border-transparent text-muted hover:text-foreground"
@@ -165,28 +239,28 @@ export function SkillsSelector({
       {activeTab === "search" && (
         <div className="space-y-3">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+            <Search className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 text-subtle" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search skills... e.g. React, Figma"
-              className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-border bg-surface text-sm text-foreground placeholder:text-muted/60 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all"
+              placeholder="Search skills… e.g. React, Figma"
+              className="w-full pl-7 pr-8 h-11 bg-transparent border-0 border-b border-rule rounded-none text-[15px] text-foreground placeholder:text-subtle focus:outline-none focus:border-primary transition-colors"
               autoFocus
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2"
+                className="absolute right-0 top-1/2 -translate-y-1/2 p-1 text-subtle hover:text-foreground transition-colors"
               >
-                <X className="w-3.5 h-3.5 text-muted" />
+                <X className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
 
           {searchQuery.length >= 2 && (
-            <div className="rounded-lg border border-border bg-surface overflow-hidden max-h-72 overflow-y-auto">
+            <div className="rounded-md border border-rule bg-surface overflow-hidden max-h-72 overflow-y-auto">
               {searchResults.length === 0 ? (
                 <div className="px-4 py-8 text-center text-sm text-muted">
                   No skills found for &ldquo;{searchQuery}&rdquo;
@@ -199,21 +273,36 @@ export function SkillsSelector({
                       key={skill.slug}
                       type="button"
                       onClick={() => toggleSkill(skill.slug)}
-                      disabled={!isSelected && selectedSkills.length >= maxSkills}
+                      disabled={
+                        !isSelected && selectedSkills.length >= maxSkills
+                      }
                       className={cn(
-                        "w-full flex items-center justify-between px-4 py-2.5 text-left transition-colors",
-                        i > 0 && "border-t border-border/40",
+                        "w-full flex items-center justify-between px-4 py-3 text-left transition-colors",
+                        i > 0 && "border-t border-rule/60",
                         isSelected ? "bg-primary/5" : "hover:bg-surface-elevated",
-                        !isSelected && selectedSkills.length >= maxSkills && "opacity-30 cursor-not-allowed"
+                        !isSelected &&
+                          selectedSkills.length >= maxSkills &&
+                          "opacity-30 cursor-not-allowed"
                       )}
                     >
                       <div>
-                        <p className={cn("text-sm", isSelected ? "text-primary font-medium" : "text-foreground")}>
+                        <p
+                          className={cn(
+                            "text-[14px]",
+                            isSelected
+                              ? "text-primary font-medium"
+                              : "text-foreground"
+                          )}
+                        >
                           {skill.name}
                         </p>
-                        <p className="text-[11px] text-muted">{skill.categoryName}</p>
+                        <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-subtle">
+                          {skill.categoryName}
+                        </p>
                       </div>
-                      {isSelected && <Check className="w-4 h-4 text-primary shrink-0" />}
+                      {isSelected && (
+                        <Check className="w-4 h-4 text-primary shrink-0" />
+                      )}
                     </button>
                   );
                 })
@@ -222,14 +311,16 @@ export function SkillsSelector({
           )}
 
           {searchQuery.length > 0 && searchQuery.length < 2 && (
-            <p className="text-xs text-muted">Type at least 2 characters</p>
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-subtle">
+              Type at least 2 characters
+            </p>
           )}
         </div>
       )}
 
       {/* Browse categories mode */}
       {activeTab === "browse" && (
-        <div className="space-y-1">
+        <div>
           {SKILL_CATEGORIES.map((category) => {
             const isExpanded = expandedCategories.has(category.id);
             const selectedInCategory = category.skills.filter((s) =>
@@ -237,21 +328,21 @@ export function SkillsSelector({
             ).length;
 
             return (
-              <div key={category.id} className="border-b border-border/50">
+              <div key={category.id} className="border-b border-rule">
                 <button
                   type="button"
                   onClick={() => toggleCategory(category.id)}
-                  className="w-full flex items-center justify-between px-3 py-3 hover:bg-surface-elevated/50 transition-colors"
+                  className="w-full flex items-center justify-between px-2 py-3 hover:bg-surface-elevated transition-colors"
                 >
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-sm font-medium text-foreground">
+                  <div className="flex items-center gap-3">
+                    <span className="font-serif text-base text-foreground">
                       {category.name}
                     </span>
-                    <span className="text-xs text-muted">
+                    <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-subtle tabular-nums">
                       {category.skills.length}
                     </span>
                     {selectedInCategory > 0 && (
-                      <span className="text-xs text-primary font-medium">
+                      <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-primary tabular-nums">
                         {selectedInCategory} selected
                       </span>
                     )}
@@ -272,7 +363,7 @@ export function SkillsSelector({
                       transition={{ duration: 0.15 }}
                       className="overflow-hidden"
                     >
-                      <div className="px-3 pb-3 flex flex-wrap gap-1.5">
+                      <div className="px-2 pb-4 flex flex-wrap gap-1.5">
                         {category.skills.map((skill) => {
                           const isSelected = selectedIds.has(skill.slug);
                           return (
@@ -280,16 +371,21 @@ export function SkillsSelector({
                               key={skill.slug}
                               type="button"
                               onClick={() => toggleSkill(skill.slug)}
-                              disabled={!isSelected && selectedSkills.length >= maxSkills}
+                              disabled={
+                                !isSelected &&
+                                selectedSkills.length >= maxSkills
+                              }
                               className={cn(
-                                "px-3 py-1.5 rounded-full text-xs font-medium border transition-all",
+                                "inline-flex items-center gap-1 rounded-sm border px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.12em] transition-colors",
                                 isSelected
-                                  ? "bg-primary/10 border-primary/25 text-primary"
-                                  : "bg-surface-elevated border-border text-muted hover:text-foreground hover:border-primary/25",
-                                !isSelected && selectedSkills.length >= maxSkills && "opacity-25 cursor-not-allowed"
+                                  ? "bg-primary/10 border-primary text-primary"
+                                  : "border-rule text-muted hover:text-foreground hover:border-rule-strong",
+                                !isSelected &&
+                                  selectedSkills.length >= maxSkills &&
+                                  "opacity-25 cursor-not-allowed"
                               )}
                             >
-                              {isSelected && <Check className="w-3 h-3 inline mr-1" />}
+                              {isSelected && <Check className="w-3 h-3" />}
                               {skill.name}
                             </button>
                           );
@@ -305,8 +401,7 @@ export function SkillsSelector({
       )}
 
       {selectedSkills.length >= maxSkills && (
-        <p className="text-xs text-warning flex items-center gap-1.5">
-          <Sparkles className="w-3 h-3" />
+        <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-warning">
           Maximum of {maxSkills} skills reached.
         </p>
       )}

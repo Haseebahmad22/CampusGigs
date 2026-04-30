@@ -2,282 +2,285 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { ArrowRight, Zap, Search, ShieldCheck, Star } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { Stamp } from "@/components/ui/stamp";
 
 const fade = (delay = 0) => ({
-  initial: { opacity: 0, y: 24 },
+  initial: { opacity: 0, y: 16 },
   animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.7, delay, ease: [0.25, 0.1, 0.25, 1] },
+  transition: {
+    type: "spring" as const,
+    stiffness: 260,
+    damping: 28,
+    delay,
+  },
 });
 
-const stagger = {
-  animate: { transition: { staggerChildren: 0.12, delayChildren: 0.3 } },
-};
-
 const navLinks = [
-  { label: "Browse Gigs", href: "/signin" },
-  { label: "How it Works", href: "/how-it-works" },
+  { label: "How it works", href: "/how-it-works" },
   { label: "Pricing", href: "/pricing" },
+];
+
+const STEPS = [
+  {
+    n: "01",
+    title: "Post or discover",
+    body: "Clients post gigs with a clear scope and reward. Freelancers browse and apply with proposals — quality over speed.",
+  },
+  {
+    n: "02",
+    title: "Match & collaborate",
+    body: "Review profiles, accept the right proposal, exchange files and messages in one place. Scope stays tied to the gig.",
+  },
+  {
+    n: "03",
+    title: "Deliver & review",
+    body: "Mark work complete, confirm delivery, leave honest reviews. Reputation is built one gig at a time.",
+  },
+];
+
+const VALUES = [
+  {
+    kicker: "Verified",
+    title: "Real students. Real context.",
+    body: "University, department, and semester data on every profile. No anonymous talent pool — you're hiring people you can find on campus tomorrow.",
+    span: "md:col-span-7",
+  },
+  {
+    kicker: "Trust",
+    title: "Reviews that compound.",
+    body: "Every completed gig can be reviewed. Ratings build over time — no shortcuts, no fake reputation.",
+    span: "md:col-span-5",
+  },
+  {
+    kicker: "Hiring",
+    title: "Proposal-based, not first-come.",
+    body: "Clients choose from proposals. Freelancers compete on craft, not on refresh speed.",
+    span: "md:col-span-5",
+  },
+  {
+    kicker: "Tokens",
+    title: "Built for campus-scale work.",
+    body: "An internal token economy designed for student-to-student transactions. No payment friction, no card setup.",
+    span: "md:col-span-7",
+  },
 ];
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-background text-foreground overflow-hidden">
-      {/* Navbar */}
-      <div className="fixed top-5 left-0 right-0 z-50 px-5 sm:px-7">
-        <motion.nav
-          initial={{ opacity: 0, y: -12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="h-16 rounded-2xl flex items-center justify-between px-6 sm:px-7 gap-6"
-          style={{
-            background: "rgba(38,48,68,0.88)",
-            backdropFilter: "blur(10px)",
-            WebkitBackdropFilter: "blur(10px)",
-            border: "1px solid rgba(255,255,255,0.08)",
-            boxShadow: "0 8px 28px rgba(7,10,18,0.26)",
-          }}
-        >
+    <div className="min-h-screen bg-background text-foreground">
+      <nav className="sticky top-0 z-50 h-14 w-full border-b border-rule bg-background/95 backdrop-blur-[2px]">
+        <div className="mx-auto flex h-full max-w-6xl items-center justify-between gap-6 px-5 sm:px-8">
           <Link
             href="/"
-            className="text-[19px] text-foreground shrink-0 italic"
-            style={{ fontFamily: "var(--font-logo)" }}
+            className="font-serif italic text-[22px] leading-none text-foreground shrink-0"
           >
             CampusGigs
           </Link>
-
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden md:flex items-center gap-6">
             {navLinks.map((link) => (
               <Link
                 key={link.label}
                 href={link.href}
-                className="text-[13.5px] text-muted hover:text-foreground transition-colors"
+                className="text-[14px] text-muted hover:text-foreground transition-colors"
               >
                 {link.label}
               </Link>
             ))}
           </div>
-
-          <div className="flex items-center gap-4 shrink-0">
+          <div className="flex items-center gap-4">
             <Link
               href="/signin"
-              className="text-[13.5px] text-muted hover:text-foreground transition-colors"
+              className="text-[14px] text-muted hover:text-foreground transition-colors"
             >
-              Log in
+              Sign in
             </Link>
             <Link
               href="/signup"
-              className="text-[13.5px] font-semibold bg-primary text-white px-5 py-2 rounded-md hover:bg-primary-dark transition-colors"
+              className="text-[13px] font-medium bg-primary text-[#F7F4EC] px-4 py-2 rounded-md hover:bg-primary-dark transition-colors"
             >
-              Sign up
+              Create account
             </Link>
           </div>
-        </motion.nav>
-      </div>
+        </div>
+      </nav>
 
-      {/* Hero */}
-      <main className="relative max-w-none mx-auto px-6 sm:px-8">
-        {/* Ambient gradient blobs */}
-        <div className="pointer-events-none absolute -top-32 -left-40 w-[600px] h-[600px] rounded-full opacity-[0.07] bg-primary blur-[120px]" />
-        <div className="pointer-events-none absolute top-20 -right-32 w-[500px] h-[500px] rounded-full opacity-[0.05] bg-secondary blur-[100px]" />
-
-        <section className="pt-36 sm:pt-44 pb-20 sm:pb-28 text-center">
-          <motion.div {...fade(0.15)}>
-            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-border bg-surface text-xs text-muted tracking-wide uppercase shadow-sm">
-              <Zap className="w-3 h-3 text-primary" />
-              Campus freelance marketplace
-            </span>
-          </motion.div>
-
-          <motion.h1
-            {...fade(0.25)}
-            className="mt-7 text-[2.8rem] sm:text-[4rem] lg:text-[5rem] leading-[1.02] tracking-tight"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
-            Where campus talent
-            <br />
-            <span className="text-primary">meets opportunity.</span>
-          </motion.h1>
-
-          <motion.p
-            {...fade(0.35)}
-            className="mt-5 text-base sm:text-lg text-muted max-w-xl mx-auto leading-relaxed"
-          >
-            Hire verified student freelancers. Build real experience.
-            A clean, focused workflow from discovery to delivery.
-          </motion.p>
+      <main className="mx-auto max-w-6xl px-5 sm:px-8">
+        {/* Hero */}
+        <section className="relative pt-20 pb-28 sm:pt-28 sm:pb-32">
+          <div className="grid grid-cols-12 gap-6 items-end">
+            <motion.div {...fade(0.05)} className="col-span-12 md:col-span-9">
+              <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-subtle">
+                Campus freelance marketplace · 2026
+              </span>
+              <h1 className="mt-5 font-serif text-[3.2rem] sm:text-[4.5rem] lg:text-[5.5rem] leading-[0.98] tracking-tight text-foreground">
+                Where campus
+                <br />
+                talent meets <em className="italic text-primary">opportunity.</em>
+              </h1>
+            </motion.div>
+            <motion.div
+              {...fade(0.2)}
+              className="col-span-12 md:col-span-3 flex md:justify-end"
+            >
+              <Stamp variant="seal" tone="terracotta" size={120} rotation={-8} />
+            </motion.div>
+          </div>
 
           <motion.div
-            {...fade(0.45)}
-            className="mt-8 flex flex-wrap items-center justify-center gap-3"
+            {...fade(0.3)}
+            className="mt-10 grid grid-cols-12 gap-6 items-end"
           >
-            <Link
-              href="/signup"
-              className="group flex items-center gap-2 px-7 py-3.5 rounded-lg bg-primary text-white font-semibold text-sm hover:bg-primary-dark transition-all hover:shadow-lg hover:shadow-primary/15"
-            >
-              Get Started
-              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
-            </Link>
-            <Link
-              href="/how-it-works"
-              className="px-7 py-3.5 rounded-lg border border-border bg-surface text-sm font-semibold text-foreground hover:bg-surface-elevated transition-colors"
-            >
-              How it works
-            </Link>
+            <p className="col-span-12 md:col-span-7 text-[17px] text-muted leading-relaxed max-w-xl">
+              Hire verified student freelancers. Build real experience. A clean,
+              focused workflow from discovery to delivery — no recruiter, no
+              middleman, no noise.
+            </p>
+            <div className="col-span-12 md:col-span-5 flex flex-wrap items-center gap-3 md:justify-end">
+              <Link
+                href="/signup"
+                className="group inline-flex items-center gap-2 px-6 py-3 rounded-md bg-primary text-[#F7F4EC] font-medium text-[14px] hover:bg-primary-dark transition-colors"
+              >
+                Get started
+                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+              </Link>
+              <Link
+                href="/how-it-works"
+                className="inline-flex items-center px-6 py-3 rounded-md border border-rule-strong text-[14px] font-medium text-foreground hover:bg-surface-elevated transition-colors"
+              >
+                How it works
+              </Link>
+            </div>
           </motion.div>
         </section>
 
-        {/* How it works — visual steps */}
-        <motion.section
-          variants={stagger}
-          initial="initial"
-          whileInView="animate"
-          viewport={{ once: true, margin: "-80px" }}
-          className="pb-24 sm:pb-32"
-        >
-          <motion.p
-            {...fade()}
-            className="text-center text-xs uppercase tracking-[0.14em] text-muted mb-10"
-          >
-            Simple by design
-          </motion.p>
+        {/* Steps */}
+        <section className="border-t border-rule pt-16 pb-24">
+          <div className="flex items-end justify-between gap-4 mb-12">
+            <div>
+              <span className="block font-mono text-[10px] uppercase tracking-[0.2em] text-subtle mb-2">
+                The flow
+              </span>
+              <h2 className="font-serif text-3xl md:text-4xl tracking-tight text-foreground">
+                Simple by design.
+              </h2>
+            </div>
+            <span className="hidden md:block font-mono text-[11px] uppercase tracking-[0.18em] text-subtle">
+              Three steps · no surprises
+            </span>
+          </div>
 
-          <div className="grid sm:grid-cols-3 gap-4">
-            {[
-              {
-                step: "01",
-                title: "Post or discover",
-                desc: "Clients post gigs with clear scopes. Freelancers browse and apply with proposals.",
-                icon: Search,
-                color: "primary",
-              },
-              {
-                step: "02",
-                title: "Match & collaborate",
-                desc: "Review profiles, accept proposals, and work together with full transparency.",
-                icon: ShieldCheck,
-                color: "secondary",
-              },
-              {
-                step: "03",
-                title: "Deliver & review",
-                desc: "Mark work complete, confirm delivery, and leave honest reviews to build reputation.",
-                icon: Star,
-                color: "accent",
-              },
-            ].map((item) => (
+          <div className="grid grid-cols-1 md:grid-cols-3 md:divide-x md:divide-rule">
+            {STEPS.map((step, i) => (
               <motion.div
-                key={item.step}
-                {...fade()}
-                className="group relative rounded-xl border border-border bg-surface p-6 hover:border-primary/20 hover:shadow-lg hover:shadow-primary/[0.04] transition-all duration-300"
+                key={step.n}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-80px" }}
+                transition={{
+                  type: "spring",
+                  stiffness: 260,
+                  damping: 28,
+                  delay: i * 0.08,
+                }}
+                className="px-0 md:px-8 first:md:pl-0 py-6 md:py-2"
               >
-                <div className="flex items-center gap-3 mb-4">
-                  <div className={`w-9 h-9 rounded-lg bg-${item.color}/8 border border-${item.color}/15 flex items-center justify-center`}>
-                    <item.icon className={`w-4 h-4 text-${item.color}`} />
-                  </div>
-                  <span className="text-xs font-mono text-muted">{item.step}</span>
-                </div>
-                <h3 className="text-base font-semibold text-foreground mb-1.5">{item.title}</h3>
-                <p className="text-sm text-muted leading-relaxed">{item.desc}</p>
+                <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-subtle">
+                  {step.n}
+                </span>
+                <h3 className="mt-3 font-serif text-2xl text-foreground">
+                  {step.title}
+                </h3>
+                <p className="mt-3 text-[15px] text-muted leading-relaxed">
+                  {step.body}
+                </p>
               </motion.div>
             ))}
           </div>
-        </motion.section>
+        </section>
 
-        {/* Value props — marquee-style cards */}
-        <motion.section
-          variants={stagger}
-          initial="initial"
-          whileInView="animate"
-          viewport={{ once: true, margin: "-60px" }}
-          className="pb-24 sm:pb-32"
-        >
-          <motion.div {...fade()} className="text-center mb-10">
-            <h2
-              className="text-2xl sm:text-3xl font-semibold tracking-tight"
-              style={{ fontFamily: "var(--font-display)" }}
-            >
-              Built for campus ecosystems
+        {/* Values bento */}
+        <section className="border-t border-rule pt-16 pb-24">
+          <div className="mb-12">
+            <span className="block font-mono text-[10px] uppercase tracking-[0.2em] text-subtle mb-2">
+              Why CampusGigs
+            </span>
+            <h2 className="font-serif text-3xl md:text-4xl tracking-tight text-foreground max-w-xl">
+              Built for the way students actually work.
             </h2>
-            <p className="text-sm text-muted mt-2 max-w-md mx-auto">
-              Purpose-built features that make freelancing work within a university context.
-            </p>
-          </motion.div>
+          </div>
 
-          <div className="grid sm:grid-cols-2 gap-4">
-            {[
-              {
-                title: "Verified student profiles",
-                desc: "University, department, and semester data ensures you're hiring real students with real context.",
-              },
-              {
-                title: "Transparent reviews",
-                desc: "Every completed gig can be reviewed. Ratings build reputation over time — no shortcuts.",
-              },
-              {
-                title: "Proposal-based hiring",
-                desc: "Clients choose from proposals, not first-come-first-served. Quality matches over speed.",
-              },
-              {
-                title: "Token-based economy",
-                desc: "A clean, internal token system designed for campus-scale transactions. No payment friction.",
-              },
-            ].map((item, i) => (
+          <div className="grid grid-cols-12 gap-4">
+            {VALUES.map((v, i) => (
               <motion.div
-                key={item.title}
-                {...fade(i * 0.06)}
-                className="rounded-xl border border-border bg-surface p-5 hover:bg-surface-elevated transition-colors duration-200"
+                key={v.title}
+                initial={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-60px" }}
+                transition={{
+                  type: "spring",
+                  stiffness: 260,
+                  damping: 28,
+                  delay: i * 0.05,
+                }}
+                className={`col-span-12 ${v.span} rounded-md border border-border bg-surface p-6 md:p-8 hover:border-rule-strong transition-colors`}
               >
-                <h3 className="text-sm font-semibold text-foreground mb-1">{item.title}</h3>
-                <p className="text-sm text-muted leading-relaxed">{item.desc}</p>
+                <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-subtle">
+                  {v.kicker}
+                </span>
+                <h3 className="mt-3 font-serif text-2xl text-foreground">
+                  {v.title}
+                </h3>
+                <p className="mt-3 text-[15px] text-muted leading-relaxed max-w-md">
+                  {v.body}
+                </p>
               </motion.div>
             ))}
           </div>
-        </motion.section>
+        </section>
 
         {/* CTA */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-60px" }}
-          transition={{ duration: 0.6 }}
-          className="pb-20 sm:pb-28"
-        >
-          <div className="rounded-2xl border border-border bg-surface p-8 sm:p-12 text-center relative overflow-hidden">
-            <div className="pointer-events-none absolute -top-20 -right-20 w-[300px] h-[300px] rounded-full opacity-[0.06] bg-primary blur-[80px]" />
-            <h2
-              className="text-2xl sm:text-3xl font-semibold tracking-tight relative"
-              style={{ fontFamily: "var(--font-display)" }}
-            >
+        <section className="border-t border-rule py-20">
+          <div className="grid grid-cols-12 gap-6 items-center">
+            <h2 className="col-span-12 md:col-span-8 font-serif text-3xl md:text-5xl tracking-tight text-foreground">
               Ready to start?
             </h2>
-            <p className="text-sm text-muted mt-2 max-w-sm mx-auto relative">
-              Join the marketplace built for students, by students. Post your first gig or find your next opportunity.
-            </p>
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-3 relative">
+            <div className="col-span-12 md:col-span-4 flex flex-wrap gap-3 md:justify-end">
               <Link
                 href="/signup"
-                className="group flex items-center gap-2 px-7 py-3 rounded-lg bg-primary text-white font-semibold text-sm hover:bg-primary-dark transition-all"
+                className="group inline-flex items-center gap-2 px-6 py-3 rounded-md bg-primary text-[#F7F4EC] font-medium text-[14px] hover:bg-primary-dark transition-colors"
               >
                 Create account
                 <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
               </Link>
               <Link
                 href="/signin"
-                className="px-7 py-3 rounded-lg border border-border text-sm font-semibold text-foreground hover:bg-surface-elevated transition-colors"
+                className="inline-flex items-center px-6 py-3 rounded-md border border-rule-strong text-[14px] font-medium text-foreground hover:bg-surface-elevated transition-colors"
               >
                 Sign in
               </Link>
             </div>
           </div>
-        </motion.section>
+        </section>
       </main>
 
-      <footer className="py-6 text-center text-xs text-subtle border-t border-border/80">
-        <div className="flex items-center justify-center gap-6">
+      <footer className="border-t border-rule py-8">
+        <div className="mx-auto max-w-6xl px-5 sm:px-8 flex items-center justify-between gap-4 font-mono text-[11px] uppercase tracking-[0.16em] text-subtle">
           <span>&copy; {new Date().getFullYear()} CampusGigs</span>
-          <Link href="/how-it-works" className="hover:text-foreground transition-colors">How it Works</Link>
-          <Link href="/pricing" className="hover:text-foreground transition-colors">Pricing</Link>
+          <div className="flex items-center gap-6">
+            <Link
+              href="/how-it-works"
+              className="hover:text-foreground transition-colors"
+            >
+              How it works
+            </Link>
+            <Link
+              href="/pricing"
+              className="hover:text-foreground transition-colors"
+            >
+              Pricing
+            </Link>
+          </div>
         </div>
       </footer>
     </div>

@@ -8,9 +8,8 @@ import {
   MapPin,
   GraduationCap,
   Languages,
-  DollarSign,
+  Coins,
   User,
-  FileText,
   Briefcase,
   CheckCircle,
   Eye,
@@ -23,28 +22,47 @@ import { SkillsSelector } from "@/components/profile/SkillsSelector";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import type { FreelancerProfile, FreelancerSkill, AvailabilityStatus } from "@/lib/types";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { SectionHeading } from "@/components/ui/section-heading";
+import { Select } from "@/components/ui/select";
+import type {
+  FreelancerProfile,
+  FreelancerSkill,
+  AvailabilityStatus,
+} from "@/lib/types";
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.06, delayChildren: 0.05 } },
-};
-const itemVariants = {
-  hidden: { opacity: 0, y: 10 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
-};
-
-const AVAILABILITY_OPTIONS: { value: AvailabilityStatus; label: string; color: string }[] = [
-  { value: "available", label: "Available", color: "text-success" },
-  { value: "busy", label: "Busy", color: "text-warning" },
-  { value: "away", label: "Away", color: "text-muted" },
-  { value: "not_available", label: "Not Available", color: "text-error" },
+const AVAILABILITY_OPTIONS: {
+  value: AvailabilityStatus;
+  label: string;
+  dot: string;
+}[] = [
+  { value: "available", label: "Available", dot: "bg-success" },
+  { value: "busy", label: "Busy", dot: "bg-warning" },
+  { value: "away", label: "Away", dot: "bg-muted" },
+  { value: "not_available", label: "Unavailable", dot: "bg-error" },
 ];
 
 const LANGUAGES = [
-  "English", "Urdu", "Hindi", "Arabic", "Chinese", "Spanish", "French",
-  "German", "Punjabi", "Pashto", "Sindhi", "Balochi", "Bengali",
-  "Turkish", "Persian", "Korean", "Japanese", "Portuguese", "Russian",
+  "English",
+  "Urdu",
+  "Hindi",
+  "Arabic",
+  "Chinese",
+  "Spanish",
+  "French",
+  "German",
+  "Punjabi",
+  "Pashto",
+  "Sindhi",
+  "Balochi",
+  "Bengali",
+  "Turkish",
+  "Persian",
+  "Korean",
+  "Japanese",
+  "Portuguese",
+  "Russian",
 ];
 
 const SEMESTER_OPTIONS = [
@@ -62,7 +80,45 @@ const SEMESTER_OPTIONS = [
   { value: "PhD", label: "PhD" },
 ];
 
-type Section = "basic" | "bio" | "education" | "skills";
+function ProfileArc({ pct }: { pct: number }) {
+  const r = 28;
+  const c = 2 * Math.PI * r;
+  const dash = (pct / 100) * c;
+  return (
+    <svg width="72" height="72" viewBox="0 0 72 72" aria-hidden="true">
+      <circle
+        cx="36"
+        cy="36"
+        r={r}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="3"
+        className="text-rule"
+      />
+      <circle
+        cx="36"
+        cy="36"
+        r={r}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeDasharray={`${dash} ${c}`}
+        strokeLinecap="round"
+        transform="rotate(-90 36 36)"
+        className="text-primary"
+      />
+      <text
+        x="36"
+        y="40"
+        textAnchor="middle"
+        className="font-serif fill-foreground tabular-nums"
+        style={{ fontSize: "16px" }}
+      >
+        {pct}%
+      </text>
+    </svg>
+  );
+}
 
 export default function EditProfilePage() {
   const router = useRouter();
@@ -71,14 +127,11 @@ export default function EditProfilePage() {
   const [saved, setSaved] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [error, setError] = useState("");
-  const [activeSection, setActiveSection] = useState<Section>("basic");
   const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false);
-  const [semesterOpen, setSemesterOpen] = useState(false);
 
   useEffect(() => {
     const loadProfile = async () => {
       const token = localStorage.getItem("campusgigs_token");
-
       if (!token) {
         router.replace("/signin");
         return;
@@ -86,20 +139,16 @@ export default function EditProfilePage() {
 
       try {
         setLoadingProfile(true);
-        const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+        const apiBaseUrl =
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
         const response = await fetch(`${apiBaseUrl}/api/profile/me`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
-
         const payload = await response.json();
-
         if (!response.ok) {
           setError(payload?.error || "Unable to load your profile.");
           return;
         }
-
         setProfile(payload as FreelancerProfile);
       } catch {
         setError("Unable to connect to backend. Please try again.");
@@ -112,7 +161,10 @@ export default function EditProfilePage() {
   }, [router]);
 
   const updateField = useCallback(
-    <K extends keyof FreelancerProfile>(field: K, value: FreelancerProfile[K]) => {
+    <K extends keyof FreelancerProfile>(
+      field: K,
+      value: FreelancerProfile[K]
+    ) => {
       setProfile((prev) => (prev ? { ...prev, [field]: value } : prev));
       setSaved(false);
     },
@@ -128,7 +180,8 @@ export default function EditProfilePage() {
       return;
     }
 
-    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+    const apiBaseUrl =
+      process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
     setSaving(true);
     setError("");
@@ -174,9 +227,7 @@ export default function EditProfilePage() {
       } else {
         await fetch(avatarEndpoint, {
           method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
       }
 
@@ -197,9 +248,7 @@ export default function EditProfilePage() {
       }
 
       const refreshed = await fetch(`${apiBaseUrl}/api/profile/me`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (refreshed.ok) {
@@ -229,388 +278,402 @@ export default function EditProfilePage() {
 
   const completionPct = profile
     ? Math.round(
-      ([
-        profile.fullName,
-        profile.headline,
-        profile.bio,
-        profile.hourlyRate !== null && profile.hourlyRate !== undefined,
-        profile.avatarUrl,
-        profile.location,
-        profile.university,
-        profile.department,
-        profile.semester,
-        profile.languages.length > 0,
-      ].filter(Boolean).length / 10) * 100
-    )
+        ([
+          profile.fullName,
+          profile.headline,
+          profile.bio,
+          profile.hourlyRate !== null && profile.hourlyRate !== undefined,
+          profile.avatarUrl,
+          profile.location,
+          profile.university,
+          profile.department,
+          profile.semester,
+          profile.languages.length > 0,
+        ].filter(Boolean).length /
+          10) *
+          100
+      )
     : 0;
 
   if (loadingProfile || !profile) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-          {error && <p className="text-sm text-error">{error}</p>}
+        <div className="font-mono text-[11px] uppercase tracking-[0.2em] text-subtle">
+          {error || "Loading…"}
         </div>
       </div>
     );
   }
-
-  const sections: { id: Section; label: string; icon: React.ElementType }[] = [
-    { id: "basic", label: "Basic Info", icon: User },
-    { id: "bio", label: "Bio & Headline", icon: FileText },
-    { id: "education", label: "Education", icon: GraduationCap },
-    { id: "skills", label: "Skills", icon: Briefcase },
-  ];
 
   return (
     <div className="min-h-screen bg-background">
       <AppNavbar />
 
       {/* Floating save bar */}
-      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40">
-        <div
-          className="flex items-center gap-3 px-4 py-2.5 rounded-xl"
-          style={{
-            background: "rgba(38,48,68,0.9)",
-            backdropFilter: "blur(8px)",
-            border: "1px solid rgba(255,255,255,0.08)",
-            boxShadow: "0 8px 24px rgba(7,10,18,0.26)",
-          }}
-        >
+      <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-40">
+        <div className="flex items-center gap-3 px-3 py-2 rounded-md border border-rule-strong bg-surface shadow-[0_2px_0_0_rgba(196,187,161,0.5)]">
           <Button
             variant="outline"
             size="sm"
-            onClick={() => router.push(`/freelancer/profile/${profile.userId}`)}
-            className="h-8"
+            onClick={() =>
+              router.push(`/freelancer/profile/${profile.userId}`)
+            }
           >
-            <Eye className="w-3.5 h-3.5 mr-1.5" />
+            <Eye className="w-3.5 h-3.5" />
             Preview
           </Button>
           <Button
-            variant="default"
+            variant={saved ? "default" : "accent"}
             size="sm"
             onClick={handleSave}
             loading={saving}
             disabled={saving}
-            className="h-8"
           >
             {saved ? (
-              <><CheckCircle className="w-3.5 h-3.5 mr-1.5" />Saved</>
+              <>
+                <CheckCircle className="w-3.5 h-3.5" />
+                Saved
+              </>
             ) : (
-              <><Save className="w-3.5 h-3.5 mr-1.5" />Save Profile</>
+              <>
+                <Save className="w-3.5 h-3.5" />
+                Save profile
+              </>
             )}
           </Button>
         </div>
       </div>
 
-      <main className="max-w-none mx-auto px-5 pt-24 pb-24">
-        <motion.div variants={containerVariants} initial="hidden" animate="visible">
-          {/* Page header */}
-          <motion.div variants={itemVariants} className="mb-6">
-            <h1 className="text-2xl font-bold text-foreground">Edit Profile</h1>
-            <p className="text-muted mt-1 text-sm">
-              Build your professional profile to attract clients
-            </p>
-            {error && <p className="text-sm text-error mt-2">{error}</p>}
-          </motion.div>
+      <main className="mx-auto max-w-6xl px-5 sm:px-8 py-10 lg:py-14 pb-32">
+        <SectionHeading
+          title="Edit profile"
+          kicker="Freelancer · Build your reputation"
+        />
+        {error && <p className="mt-4 text-sm text-error">{error}</p>}
 
-          <div className="flex flex-col lg:flex-row gap-6">
-            {/* Left sidebar */}
-            <motion.div variants={itemVariants} className="lg:w-64 shrink-0 space-y-4">
-              {/* Profile card */}
-              <div className="p-4 rounded-lg border border-border bg-surface">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="relative w-11 h-11 rounded-full overflow-hidden border-2 border-primary/30">
-                    {profile.avatarUrl ? (
-                      <img src={profile.avatarUrl} alt={profile.fullName} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full bg-linear-to-br from-primary/20 to-accent/20 flex items-center justify-center text-sm font-bold text-foreground/80">
-                        {profile.fullName.split(" ").map((n) => n[0]).join("").slice(0, 2)}
-                      </div>
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-foreground truncate">{profile.fullName}</p>
-                    <p className="text-xs text-muted truncate">{profile.email}</p>
-                  </div>
-                </div>
-
-                {/* Completion bar */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted">Completion</span>
-                    <span className={cn("font-semibold", completionPct >= 80 ? "text-success" : completionPct >= 50 ? "text-warning" : "text-error")}>
-                      {completionPct}%
-                    </span>
-                  </div>
-                  <div className="h-1.5 rounded-full bg-surface-elevated overflow-hidden">
-                    <motion.div
-                      className={cn("h-full rounded-full", completionPct >= 80 ? "bg-success" : completionPct >= 50 ? "bg-warning" : "bg-error")}
-                      initial={{ width: 0 }}
-                      animate={{ width: `${completionPct}%` }}
-                      transition={{ duration: 0.8, ease: "easeOut" }}
-                    />
-                  </div>
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ type: "spring", stiffness: 260, damping: 28 }}
+          className="mt-8 grid grid-cols-12 gap-6 lg:gap-8"
+        >
+          {/* Left rail */}
+          <aside className="col-span-12 lg:col-span-3 space-y-5">
+            {/* Avatar + completion */}
+            <div className="rounded-md border border-border bg-surface p-5">
+              <AvatarUpload
+                currentUrl={profile.avatarUrl}
+                userName={profile.fullName}
+                onUpload={(url) => updateField("avatarUrl", url)}
+                onRemove={() => updateField("avatarUrl", null)}
+                size="lg"
+              />
+              <p className="mt-4 font-serif text-base text-foreground truncate">
+                {profile.fullName}
+              </p>
+              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-subtle truncate">
+                {profile.email}
+              </p>
+              <div className="mt-5 pt-5 border-t border-rule flex items-center gap-4 text-current">
+                <ProfileArc pct={completionPct} />
+                <div>
+                  <span className="block font-mono text-[10px] uppercase tracking-[0.18em] text-subtle">
+                    Completion
+                  </span>
+                  <p className="text-[13px] text-muted leading-snug max-w-[10rem]">
+                    {completionPct >= 80
+                      ? "Profile is complete."
+                      : "Finish profile to win more proposals."}
+                  </p>
                 </div>
               </div>
+            </div>
 
-              {/* Section nav */}
-              <div className="rounded-lg border border-border bg-surface overflow-hidden">
-                {sections.map((section) => (
+            {/* Availability */}
+            <div className="rounded-md border border-border bg-surface p-5">
+              <span className="block font-mono text-[10px] uppercase tracking-[0.18em] text-subtle mb-3">
+                Availability
+              </span>
+              <div className="space-y-1">
+                {AVAILABILITY_OPTIONS.map((opt) => (
                   <button
-                    key={section.id}
+                    key={opt.value}
                     type="button"
-                    onClick={() => setActiveSection(section.id)}
+                    onClick={() => updateField("availability", opt.value)}
                     className={cn(
-                      "w-full flex items-center gap-2.5 px-4 py-3 text-left transition-all border-l-2 text-sm",
-                      activeSection === section.id
-                        ? "bg-primary/5 border-primary text-foreground font-medium"
+                      "w-full flex items-center gap-2 px-3 py-2 rounded-sm border text-[13px] transition-colors",
+                      profile.availability === opt.value
+                        ? "border-primary bg-primary/5 text-foreground"
                         : "border-transparent text-muted hover:text-foreground hover:bg-surface-elevated"
                     )}
                   >
-                    <section.icon className="w-4 h-4 shrink-0" />
-                    {section.label}
+                    <span className={cn("w-2 h-2 rounded-full", opt.dot)} />
+                    <span>{opt.label}</span>
+                    {profile.availability === opt.value && (
+                      <CheckCircle className="w-3 h-3 text-primary ml-auto" />
+                    )}
                   </button>
                 ))}
               </div>
+            </div>
+          </aside>
 
-              {/* Availability */}
-              <div className="p-4 rounded-lg border border-border bg-surface">
-                <p className="text-xs font-medium text-muted mb-2.5">Availability</p>
-                <div className="space-y-1">
-                  {AVAILABILITY_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => updateField("availability", opt.value)}
-                      className={cn(
-                        "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all",
-                        profile.availability === opt.value
-                          ? "bg-surface-elevated border border-primary/25"
-                          : "hover:bg-surface-elevated border border-transparent"
-                      )}
-                    >
-                      <div className={cn(
-                        "w-2 h-2 rounded-full",
-                        opt.value === "available" && "bg-success",
-                        opt.value === "busy" && "bg-warning",
-                        opt.value === "away" && "bg-muted",
-                        opt.value === "not_available" && "bg-error"
-                      )} />
-                      <span className={cn("font-medium", opt.color)}>{opt.label}</span>
-                      {profile.availability === opt.value && (
-                        <CheckCircle className="w-3 h-3 text-primary ml-auto" />
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
+          {/* Main */}
+          <div className="col-span-12 lg:col-span-9 min-w-0">
+            <Tabs defaultValue="basics">
+              <TabsList>
+                <TabsTrigger value="basics">Basics</TabsTrigger>
+                <TabsTrigger value="bio">Bio</TabsTrigger>
+                <TabsTrigger value="education">Education</TabsTrigger>
+                <TabsTrigger
+                  value="skills"
+                  count={profile.skills.length}
+                >
+                  Skills
+                </TabsTrigger>
+              </TabsList>
 
-            {/* Main content */}
-            <motion.div variants={itemVariants} className="flex-1 min-w-0">
-              <div className="rounded-lg border border-border bg-surface p-5 sm:p-6">
-                {/* Basic Info */}
-                {activeSection === "basic" && (
-                  <motion.div key="basic" initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.2 }} className="space-y-6">
-                    <div>
-                      <h2 className="text-lg font-bold text-foreground">Basic Information</h2>
-                      <p className="text-sm text-muted mt-0.5">Your personal details visible to clients</p>
-                    </div>
-
-                    {/* Avatar */}
-                    <div className="flex flex-col sm:flex-row items-start gap-5">
-                      <AvatarUpload
-                        currentUrl={profile.avatarUrl}
-                        userName={profile.fullName}
-                        onUpload={(url) => updateField("avatarUrl", url)}
-                        onRemove={() => updateField("avatarUrl", null)}
-                        size="lg"
+              {/* Basics */}
+              <TabsContent value="basics">
+                <SectionHeading
+                  title="Basic information"
+                  kicker="Visible to clients"
+                  as="h3"
+                />
+                <div className="mt-6 space-y-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div className="space-y-2">
+                      <Label htmlFor="fullName">Full name</Label>
+                      <Input
+                        id="fullName"
+                        value={profile.fullName}
+                        onChange={(e) =>
+                          updateField("fullName", e.target.value)
+                        }
+                        placeholder="Your full name"
+                        icon={<User className="w-4 h-4" />}
                       />
-                      <div className="flex-1 space-y-1">
-                        <h3 className="text-sm font-semibold text-foreground">Profile Photo</h3>
-                        <p className="text-xs text-muted leading-relaxed">
-                          Upload a professional photo. JPG, PNG or WebP, max 5MB.
-                        </p>
-                      </div>
                     </div>
-
-                    <div className="h-px bg-border" />
-
-                    {/* Name + Headline */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-foreground">Full Name</label>
-                        <Input value={profile.fullName} onChange={(e) => updateField("fullName", e.target.value)} placeholder="Your full name" icon={<User className="w-4 h-4" />} />
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-foreground">Professional Headline</label>
-                        <Input value={profile.headline} onChange={(e) => updateField("headline", e.target.value)} placeholder="e.g. Full-Stack Developer & UI Designer" icon={<Briefcase className="w-4 h-4" />} />
-                        <p className="text-xs text-muted">Appears below your name</p>
-                      </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="headline">Headline</Label>
+                      <Input
+                        id="headline"
+                        value={profile.headline}
+                        onChange={(e) =>
+                          updateField("headline", e.target.value)
+                        }
+                        placeholder="e.g. Full-stack developer & UI designer"
+                        icon={<Briefcase className="w-4 h-4" />}
+                      />
                     </div>
+                  </div>
 
-                    {/* Location + Rate */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-foreground">Location</label>
-                        <Input value={profile.location} onChange={(e) => updateField("location", e.target.value)} placeholder="City, Country" icon={<MapPin className="w-4 h-4" />} />
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-foreground">Hourly Rate (tokens)</label>
-                        <Input type="number" value={profile.hourlyRate ?? ""} onChange={(e) => updateField("hourlyRate", e.target.value ? Number(e.target.value) : null)} placeholder="e.g. 25" icon={<DollarSign className="w-4 h-4" />} min={0} />
-                      </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div className="space-y-2">
+                      <Label htmlFor="location">Location</Label>
+                      <Input
+                        id="location"
+                        value={profile.location}
+                        onChange={(e) =>
+                          updateField("location", e.target.value)
+                        }
+                        placeholder="City, country"
+                        icon={<MapPin className="w-4 h-4" />}
+                      />
                     </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="rate">Hourly rate (tokens)</Label>
+                      <Input
+                        id="rate"
+                        type="number"
+                        value={profile.hourlyRate ?? ""}
+                        onChange={(e) =>
+                          updateField(
+                            "hourlyRate",
+                            e.target.value ? Number(e.target.value) : null
+                          )
+                        }
+                        placeholder="25"
+                        icon={<Coins className="w-4 h-4" />}
+                        min={0}
+                      />
+                    </div>
+                  </div>
 
-                    {/* Languages */}
-                    <div className="space-y-1.5">
-                      <label className="text-sm font-medium text-foreground">Languages</label>
-                      {profile.languages.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mb-2">
-                          {profile.languages.map((lang) => (
-                            <span key={lang} className="flex items-center gap-1 pl-2.5 pr-1.5 py-1 rounded-full border border-border bg-surface-elevated text-xs text-foreground">
+                  <div className="space-y-2">
+                    <Label>Languages</Label>
+                    {profile.languages.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mb-2">
+                        {profile.languages.map((lang) => (
+                          <span
+                            key={lang}
+                            className="inline-flex items-center gap-2 pl-2.5 pr-1.5 py-1 rounded-sm border border-rule bg-surface-elevated font-mono text-[10px] uppercase tracking-[0.12em] text-foreground"
+                          >
+                            {lang}
+                            <button
+                              type="button"
+                              onClick={() => toggleLanguage(lang)}
+                              className="text-subtle hover:text-foreground transition-colors"
+                              aria-label={`Remove ${lang}`}
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setLanguageDropdownOpen(!languageDropdownOpen)
+                        }
+                        className="w-full flex items-center justify-between px-0 py-2 border-0 border-b border-rule rounded-none text-[15px] text-muted hover:text-foreground hover:border-rule-strong transition-colors"
+                      >
+                        <span className="inline-flex items-center gap-2">
+                          <Languages className="w-4 h-4" />
+                          Add languages…
+                        </span>
+                        <ChevronDown
+                          className={cn(
+                            "w-4 h-4 transition-transform",
+                            languageDropdownOpen && "rotate-180"
+                          )}
+                        />
+                      </button>
+                      {languageDropdownOpen && (
+                        <div className="absolute z-20 left-0 right-0 mt-1 rounded-md border border-rule-strong bg-surface shadow-[0_2px_0_0_rgba(196,187,161,0.5)] max-h-48 overflow-y-auto">
+                          {LANGUAGES.filter(
+                            (l) => !profile.languages.includes(l)
+                          ).map((lang) => (
+                            <button
+                              key={lang}
+                              type="button"
+                              onClick={() => {
+                                toggleLanguage(lang);
+                                setLanguageDropdownOpen(false);
+                              }}
+                              className="w-full text-left px-4 py-2 text-[14px] text-foreground hover:bg-surface-elevated transition-colors"
+                            >
                               {lang}
-                              <button type="button" onClick={() => toggleLanguage(lang)} className="w-4 h-4 rounded-full flex items-center justify-center hover:bg-border transition-colors">
-                                <span className="text-muted text-xs">x</span>
-                              </button>
-                            </span>
+                            </button>
                           ))}
                         </div>
                       )}
-                      <div className="relative">
-                        <button
-                          type="button"
-                          onClick={() => setLanguageDropdownOpen(!languageDropdownOpen)}
-                          className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg border border-border bg-surface text-sm text-muted hover:border-primary/40 transition-colors"
-                        >
-                          <span className="flex items-center gap-2">
-                            <Languages className="w-4 h-4" />
-                            Add languages...
-                          </span>
-                          <ChevronDown className={cn("w-4 h-4 transition-transform", languageDropdownOpen && "rotate-180")} />
-                        </button>
-                        {languageDropdownOpen && (
-                          <div className="absolute z-20 w-full mt-1 rounded-lg border border-border bg-surface-elevated shadow-xl max-h-48 overflow-y-auto">
-                            {LANGUAGES.filter((l) => !profile.languages.includes(l)).map((lang) => (
-                              <button
-                                key={lang}
-                                type="button"
-                                onClick={() => { toggleLanguage(lang); setLanguageDropdownOpen(false); }}
-                                className="w-full text-left px-4 py-2.5 text-sm text-foreground hover:bg-primary/5 transition-colors"
-                              >
-                                {lang}
-                              </button>
-                            ))}
-                          </div>
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+
+              {/* Bio */}
+              <TabsContent value="bio">
+                <SectionHeading
+                  title="Bio & description"
+                  kicker="Tell your story"
+                  as="h3"
+                />
+                <div className="mt-6 max-w-3xl space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="bio">Professional overview</Label>
+                      <span
+                        className={cn(
+                          "font-mono text-[10px] uppercase tracking-[0.14em] tabular-nums",
+                          (profile.bio?.length || 0) > 2000
+                            ? "text-error"
+                            : "text-subtle"
                         )}
-                      </div>
+                      >
+                        {profile.bio?.length || 0} / 2000
+                      </span>
                     </div>
-                  </motion.div>
-                )}
-
-                {/* Bio */}
-                {activeSection === "bio" && (
-                  <motion.div key="bio" initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.2 }} className="space-y-5">
-                    <div>
-                      <h2 className="text-lg font-bold text-foreground">Bio & Description</h2>
-                      <p className="text-sm text-muted mt-0.5">Tell clients about yourself and your experience</p>
-                    </div>
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <label className="text-sm font-medium text-foreground">Professional Overview</label>
-                        <span className={cn("text-xs", (profile.bio?.length || 0) > 2000 ? "text-error" : "text-muted")}>
-                          {profile.bio?.length || 0}/2000
-                        </span>
-                      </div>
-                      <Textarea
-                        value={profile.bio ?? ""}
-                        onChange={(e) => updateField("bio", e.target.value)}
-                        placeholder="Describe yourself, your expertise, and what you bring to the table..."
-                        rows={8}
-                        maxLength={2000}
-                      />
-                      <div className="p-3 rounded-lg bg-primary/5 border border-primary/10">
-                        <p className="text-xs text-muted leading-relaxed">
-                          <strong className="text-foreground">Tip:</strong>{" "}
-                          Profiles with detailed bios (300+ chars) get 3x more gig offers.
-                        </p>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* Education */}
-                {activeSection === "education" && (
-                  <motion.div key="education" initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.2 }} className="space-y-5">
-                    <div>
-                      <h2 className="text-lg font-bold text-foreground">Education Details</h2>
-                      <p className="text-sm text-muted mt-0.5">Help clients understand your academic background</p>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-foreground">University</label>
-                        <Input value={profile.university} onChange={(e) => updateField("university", e.target.value)} placeholder="e.g. FAST-NUCES, LUMS, NUST" icon={<GraduationCap className="w-4 h-4" />} />
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-foreground">Department / Major</label>
-                        <Input value={profile.department} onChange={(e) => updateField("department", e.target.value)} placeholder="e.g. Computer Science, BBA" />
-                      </div>
-                    </div>
-
-                    {/* Custom semester dropdown */}
-                    <div className="space-y-1.5 max-w-xs">
-                      <label className="text-sm font-medium text-foreground">Current Semester</label>
-                      <div className="relative">
-                        <button
-                          type="button"
-                          onClick={() => setSemesterOpen(!semesterOpen)}
-                          className={cn(
-                            "w-full flex items-center justify-between px-3 py-2.5 rounded-lg border bg-surface text-sm transition-colors",
-                            semesterOpen ? "border-primary/50 ring-2 ring-primary/20" : "border-border hover:border-primary/40",
-                            profile.semester ? "text-foreground" : "text-muted"
-                          )}
-                        >
-                          <span>{profile.semester || "Select semester"}</span>
-                          <ChevronDown className={cn("w-4 h-4 text-muted transition-transform", semesterOpen && "rotate-180")} />
-                        </button>
-                        {semesterOpen && (
-                          <div className="absolute z-20 w-full mt-1 rounded-lg border border-border bg-surface-elevated shadow-xl max-h-56 overflow-y-auto">
-                            {SEMESTER_OPTIONS.map((opt) => (
-                              <button
-                                key={opt.value}
-                                type="button"
-                                onClick={() => { updateField("semester", opt.value); setSemesterOpen(false); }}
-                                className={cn(
-                                  "w-full text-left px-4 py-2.5 text-sm transition-colors",
-                                  profile.semester === opt.value ? "bg-primary/5 text-primary font-medium" : "text-foreground hover:bg-primary/5"
-                                )}
-                              >
-                                {opt.label}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* Skills */}
-                {activeSection === "skills" && (
-                  <motion.div key="skills" initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.2 }} className="space-y-5">
-                    <div>
-                      <h2 className="text-lg font-bold text-foreground">Skills & Expertise</h2>
-                      <p className="text-sm text-muted mt-0.5">Select up to 15 skills that represent what you offer</p>
-                    </div>
-                    <SkillsSelector
-                      selectedSkills={profile.skills}
-                      onSkillsChange={(skills: FreelancerSkill[]) => updateField("skills", skills)}
-                      maxSkills={15}
+                    <Textarea
+                      id="bio"
+                      value={profile.bio ?? ""}
+                      onChange={(e) => updateField("bio", e.target.value)}
+                      placeholder="Describe yourself, your expertise, and what you bring to the table…"
+                      rows={10}
+                      maxLength={2000}
                     />
-                  </motion.div>
-                )}
-              </div>
-            </motion.div>
+                  </div>
+                  <div className="rounded-md border border-rule bg-surface-elevated/50 p-4">
+                    <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-subtle">
+                      Tip
+                    </p>
+                    <p className="mt-1 text-[13px] text-muted">
+                      Profiles with detailed bios (300+ chars) get 3× more gig
+                      offers.
+                    </p>
+                  </div>
+                </div>
+              </TabsContent>
+
+              {/* Education */}
+              <TabsContent value="education">
+                <SectionHeading
+                  title="Education"
+                  kicker="Academic background"
+                  as="h3"
+                />
+                <div className="mt-6 space-y-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div className="space-y-2">
+                      <Label htmlFor="university">University</Label>
+                      <Input
+                        id="university"
+                        value={profile.university}
+                        onChange={(e) =>
+                          updateField("university", e.target.value)
+                        }
+                        placeholder="e.g. FAST-NUCES, LUMS, NUST"
+                        icon={<GraduationCap className="w-4 h-4" />}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="department">Department</Label>
+                      <Input
+                        id="department"
+                        value={profile.department}
+                        onChange={(e) =>
+                          updateField("department", e.target.value)
+                        }
+                        placeholder="e.g. Computer Science, BBA"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 max-w-xs">
+                    <Label>Current semester</Label>
+                    <Select
+                      value={profile.semester}
+                      onValueChange={(v) => updateField("semester", v)}
+                      ariaLabel="Current semester"
+                      boxed={false}
+                      placeholder="Select semester"
+                      options={SEMESTER_OPTIONS}
+                    />
+                  </div>
+                </div>
+              </TabsContent>
+
+              {/* Skills */}
+              <TabsContent value="skills">
+                <SectionHeading
+                  title="Skills & expertise"
+                  kicker="Up to 15 skills"
+                  as="h3"
+                />
+                <div className="mt-6">
+                  <SkillsSelector
+                    selectedSkills={profile.skills}
+                    onSkillsChange={(skills: FreelancerSkill[]) =>
+                      updateField("skills", skills)
+                    }
+                    maxSkills={15}
+                  />
+                </div>
+              </TabsContent>
+            </Tabs>
           </div>
         </motion.div>
       </main>

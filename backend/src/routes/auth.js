@@ -89,8 +89,13 @@ router.post("/signup", async (req, res, next) => {
       );
     }
 
+    const token = jwt.sign({ sub: user.id, email: user.email, role: user.role }, jwtSecret, {
+      expiresIn: "7d",
+    });
+
     return res.status(201).json({
-      message: "Signup successful. Please sign in to continue.",
+      message: "Signup successful.",
+      token,
       user: {
         id: user.id,
         email: user.email,

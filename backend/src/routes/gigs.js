@@ -15,6 +15,19 @@ const MAX_TITLE_LENGTH = 200;
 const MAX_DESCRIPTION_LENGTH = 5000;
 const MAX_COVER_LETTER_LENGTH = 4000;
 const MAX_TOKEN_REWARD = 100000;
+const MAX_FILE_NAME_LENGTH = 255;
+const MAX_MIME_LENGTH = 100;
+const MAX_FILE_URL_LENGTH = 2048;
+const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
+const MAX_ATTACHMENTS_PER_KIND = 5;
+const ALLOWED_MIME_TYPES = new Set([
+  "application/pdf",
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "application/zip",
+  "application/x-zip-compressed",
+]);
 
 async function notify(userId, type, message, gigId, dbQuery = query) {
   await dbQuery(
@@ -55,8 +68,37 @@ function mapGig(row) {
     freelancerAvatar: row.freelancer_avatar || null,
     proposalCount: Number(row.proposal_count || 0),
     pendingProposalCount: Number(row.pending_proposal_count ?? row.proposal_count ?? 0),
+    categoryId: row.category_id || null,
+    categoryName: row.category_name || null,
+    categorySlug: row.category_slug || null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+  };
+}
+
+function mapAttachment(row) {
+  return {
+    id: row.id,
+    gigId: row.gig_id,
+    uploaderId: row.uploader_id,
+    fileUrl: row.file_url,
+    fileName: row.file_name,
+    fileSizeBytes: Number(row.file_size_bytes),
+    mimeType: row.mime_type,
+    kind: row.kind,
+    createdAt: row.created_at,
+  };
+}
+
+function mapMessage(row) {
+  return {
+    id: row.id,
+    gigId: row.gig_id,
+    senderId: row.sender_id,
+    senderName: row.sender_name || null,
+    senderAvatar: row.sender_avatar || null,
+    body: row.body,
+    createdAt: row.created_at,
   };
 }
 
@@ -136,6 +178,46 @@ router.param("proposalId", (req, res, next, id) => {
   return next();
 });
 
+router.param("attachmentId", (req, res, next, id) => {
+  if (!isUuid(id)) {
+    return res.status(400).json({ error: "Invalid attachment id." });
+  }
+  return next();
+});
+
+function parseOptionalCategoryId(value) {
+  if (value === undefined || value === null || value === "") return null;
+  if (typeof value !== "string" || !isUuid(value)) {
+    throw requestError(400, "Invalid category.");
+  }
+  return value;
+}
+
+function parseAttachmentPayload(body) {
+  const fileUrl = normalizeRequiredText(body.fileUrl, "fileUrl", MAX_FILE_URL_LENGTH);
+  const fileName = normalizeRequiredText(body.fileName, "fileName", MAX_FILE_NAME_LENGTH);
+  const mimeType = normalizeRequiredText(body.mimeType, "mimeType", MAX_MIME_LENGTH);
+  const kind = typeof body.kind === "string" ? body.kind.trim() : "";
+
+  if (kind !== "spec" && kind !== "submission") {
+    throw requestError(400, "kind must be 'spec' or 'submission'.");
+  }
+
+  const sizeRaw = Number(body.fileSizeBytes);
+  if (!Number.isFinite(sizeRaw) || !Number.isInteger(sizeRaw) || sizeRaw < 0) {
+    throw requestError(400, "fileSizeBytes must be a non-negative integer.");
+  }
+  if (sizeRaw > MAX_FILE_SIZE_BYTES) {
+    throw requestError(400, "File exceeds the 10 MB size limit.");
+  }
+
+  if (!ALLOWED_MIME_TYPES.has(mimeType.toLowerCase())) {
+    throw requestError(400, "File type not allowed. Use PDF, PNG, JPEG, WEBP, or ZIP.");
+  }
+
+  return { fileUrl, fileName, mimeType, fileSizeBytes: sizeRaw, kind };
+}
+
 // ── routes ──
 
 // Browse open gigs (public)
@@ -146,6 +228,7 @@ router.get("/", async (req, res, next) => {
     const offset = (page - 1) * limit;
     const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
     const sort = typeof req.query.sort === "string" ? req.query.sort.trim() : "";
+    const categoryId = typeof req.query.category_id === "string" ? req.query.category_id.trim() : "";
 
     const where = ["g.status = 'open'"];
     const params = [];
@@ -154,6 +237,14 @@ router.get("/", async (req, res, next) => {
       params.push(`%${q}%`);
       const i = `$${params.length}`;
       where.push(`(g.title ILIKE ${i} OR g.description ILIKE ${i} OR u.full_name ILIKE ${i})`);
+    }
+
+    if (categoryId) {
+      if (!isUuid(categoryId)) {
+        return res.status(400).json({ error: "Invalid category." });
+      }
+      params.push(categoryId);
+      where.push(`g.category_id = $${params.length}`);
     }
 
     const wc = `WHERE ${where.join(" AND ")}`;
@@ -174,10 +265,12 @@ router.get("/", async (req, res, next) => {
       `
         SELECT
           g.*, u.full_name AS client_name,
+          sc.name AS category_name, sc.slug AS category_slug,
           (SELECT COUNT(*)::int FROM gig_proposals gp WHERE gp.gig_id = g.id) AS proposal_count,
           (SELECT COUNT(*)::int FROM gig_proposals gp WHERE gp.gig_id = g.id AND gp.status = 'pending') AS pending_proposal_count
         FROM gigs g
         INNER JOIN users u ON u.id = g.client_id
+        LEFT JOIN skill_categories sc ON sc.id = g.category_id
         ${wc}
         ORDER BY ${orderBy}
         LIMIT $${params.length + 1} OFFSET $${params.length + 2}
@@ -205,12 +298,14 @@ router.get("/mine", auth, requireRole("client"), async (req, res, next) => {
           g.*, u.full_name AS client_name,
           fu.full_name AS freelancer_name,
           fp.avatar_url AS freelancer_avatar,
+          sc.name AS category_name, sc.slug AS category_slug,
           (SELECT COUNT(*)::int FROM gig_proposals gp WHERE gp.gig_id = g.id) AS proposal_count,
           (SELECT COUNT(*)::int FROM gig_proposals gp WHERE gp.gig_id = g.id AND gp.status = 'pending') AS pending_proposal_count
         FROM gigs g
         INNER JOIN users u ON u.id = g.client_id
         LEFT JOIN users fu ON fu.id = g.freelancer_id
         LEFT JOIN freelancer_profiles fp ON fp.user_id = g.freelancer_id
+        LEFT JOIN skill_categories sc ON sc.id = g.category_id
         WHERE g.client_id = $1
         ORDER BY
           CASE g.status
@@ -239,13 +334,15 @@ router.get("/my-proposals", auth, requireRole("freelancer"), async (req, res, ne
         SELECT
           gp.id AS proposal_id, gp.status AS proposal_status, gp.cover_letter, gp.created_at AS proposal_created_at,
           g.id, g.title, g.description, g.token_reward, g.status, g.client_id, g.freelancer_id,
-          g.created_at, g.updated_at,
+          g.category_id, g.created_at, g.updated_at,
           u.full_name AS client_name,
+          sc.name AS category_name, sc.slug AS category_slug,
           (SELECT COUNT(*)::int FROM gig_proposals gp2 WHERE gp2.gig_id = g.id) AS proposal_count,
           (SELECT COUNT(*)::int FROM gig_proposals gp2 WHERE gp2.gig_id = g.id AND gp2.status = 'pending') AS pending_proposal_count
         FROM gig_proposals gp
         INNER JOIN gigs g ON g.id = gp.gig_id
         INNER JOIN users u ON u.id = g.client_id
+        LEFT JOIN skill_categories sc ON sc.id = g.category_id
         WHERE gp.freelancer_id = $1
         ORDER BY gp.created_at DESC
       `,
@@ -277,12 +374,14 @@ router.get("/:id", optionalAuth, async (req, res, next) => {
           g.*, u.full_name AS client_name,
           fu.full_name AS freelancer_name,
           fp.avatar_url AS freelancer_avatar,
+          sc.name AS category_name, sc.slug AS category_slug,
           (SELECT COUNT(*)::int FROM gig_proposals gp WHERE gp.gig_id = g.id) AS proposal_count,
           (SELECT COUNT(*)::int FROM gig_proposals gp WHERE gp.gig_id = g.id AND gp.status = 'pending') AS pending_proposal_count
         FROM gigs g
         INNER JOIN users u ON u.id = g.client_id
         LEFT JOIN users fu ON fu.id = g.freelancer_id
         LEFT JOIN freelancer_profiles fp ON fp.user_id = g.freelancer_id
+        LEFT JOIN skill_categories sc ON sc.id = g.category_id
         WHERE g.id = $1
         LIMIT 1
       `,
@@ -325,6 +424,7 @@ router.post("/", auth, requireRole("client"), async (req, res, next) => {
     const title = normalizeRequiredText(req.body.title, "Title", MAX_TITLE_LENGTH);
     const description = normalizeRequiredText(req.body.description, "Description", MAX_DESCRIPTION_LENGTH);
     const tokenReward = parseTokenReward(req.body.tokenReward);
+    const categoryId = parseOptionalCategoryId(req.body.categoryId);
 
     await client.query("BEGIN");
 
@@ -342,9 +442,9 @@ router.post("/", auth, requireRole("client"), async (req, res, next) => {
     }
 
     const result = await client.query(
-      `INSERT INTO gigs (client_id, title, description, token_reward)
-       VALUES ($1, $2, $3, $4) RETURNING *`,
-      [req.user.id, title, description, tokenReward]
+      `INSERT INTO gigs (client_id, title, description, token_reward, category_id)
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [req.user.id, title, description, tokenReward, categoryId]
     );
 
     const row = result.rows[0];
@@ -384,6 +484,7 @@ router.put("/:id", auth, requireRole("client"), async (req, res, next) => {
     const title = normalizeRequiredText(req.body.title, "Title", MAX_TITLE_LENGTH);
     const description = normalizeRequiredText(req.body.description, "Description", MAX_DESCRIPTION_LENGTH);
     const tokenReward = parseTokenReward(req.body.tokenReward);
+    const categoryId = parseOptionalCategoryId(req.body.categoryId);
 
     await client.query("BEGIN");
 
@@ -472,9 +573,9 @@ router.put("/:id", auth, requireRole("client"), async (req, res, next) => {
     }
 
     const result = await client.query(
-      `UPDATE gigs SET title = $1, description = $2, token_reward = $3, updated_at = NOW()
-       WHERE id = $4 RETURNING *`,
-      [title, description, tokenReward, req.params.id]
+      `UPDATE gigs SET title = $1, description = $2, token_reward = $3, category_id = $4, updated_at = NOW()
+       WHERE id = $5 RETURNING *`,
+      [title, description, tokenReward, categoryId, req.params.id]
     );
 
     const row = result.rows[0];
@@ -788,6 +889,14 @@ router.post("/:id/complete", auth, requireRole("freelancer"), async (req, res, n
     if (gig.freelancer_id !== req.user.id) return res.status(403).json({ error: "You are not assigned to this gig." });
     if (gig.status !== "in_progress") return res.status(400).json({ error: "Gig is not in progress." });
 
+    const submissions = await query(
+      `SELECT COUNT(*)::int AS count FROM gig_attachments WHERE gig_id = $1 AND kind = 'submission'`,
+      [req.params.id]
+    );
+    if (!submissions.rows[0]?.count) {
+      return res.status(400).json({ error: "Upload at least one deliverable file before marking complete." });
+    }
+
     await query(`UPDATE gigs SET status = 'pending_completion' WHERE id = $1`, [req.params.id]);
 
     const nameResult = await query(`SELECT full_name FROM users WHERE id = $1`, [req.user.id]);
@@ -869,6 +978,118 @@ router.post("/:id/confirm", auth, requireRole("client"), async (req, res, next) 
     return next(error);
   } finally {
     client.release();
+  }
+});
+
+// ── attachments ──
+
+// Upload metadata for a gig attachment.
+// Frontend uploads the file directly to Supabase Storage, then posts the resulting URL here.
+router.post("/:id/attachments", auth, async (req, res, next) => {
+  try {
+    const payload = parseAttachmentPayload(req.body);
+    const gig = await findGig(req.params.id);
+    if (!gig) return res.status(404).json({ error: "Gig not found." });
+
+    if (payload.kind === "spec") {
+      if (gig.client_id !== req.user.id) {
+        return res.status(403).json({ error: "Only the gig owner can upload spec files." });
+      }
+      if (gig.status !== "open" && gig.status !== "in_progress") {
+        return res.status(400).json({ error: "Cannot add spec files at this stage." });
+      }
+    } else {
+      if (gig.freelancer_id !== req.user.id) {
+        return res.status(403).json({ error: "Only the assigned freelancer can upload deliverables." });
+      }
+      if (gig.status !== "in_progress" && gig.status !== "pending_completion") {
+        return res.status(400).json({ error: "Cannot add submission files at this stage." });
+      }
+    }
+
+    const existing = await query(
+      `SELECT COUNT(*)::int AS count FROM gig_attachments WHERE gig_id = $1 AND kind = $2`,
+      [req.params.id, payload.kind]
+    );
+    if ((existing.rows[0]?.count || 0) >= MAX_ATTACHMENTS_PER_KIND) {
+      return res.status(400).json({ error: `At most ${MAX_ATTACHMENTS_PER_KIND} ${payload.kind} files per gig.` });
+    }
+
+    const result = await query(
+      `INSERT INTO gig_attachments (gig_id, uploader_id, file_url, file_name, file_size_bytes, mime_type, kind)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [req.params.id, req.user.id, payload.fileUrl, payload.fileName, payload.fileSizeBytes, payload.mimeType, payload.kind]
+    );
+
+    return res.status(201).json(mapAttachment(result.rows[0]));
+  } catch (error) {
+    return next(error);
+  }
+});
+
+// List attachments for a gig (gig owner + assigned freelancer + open-gig spec viewers)
+router.get("/:id/attachments", auth, async (req, res, next) => {
+  try {
+    const gig = await findGig(req.params.id);
+    if (!gig) return res.status(404).json({ error: "Gig not found." });
+
+    const kind = typeof req.query.kind === "string" ? req.query.kind.trim() : "";
+    if (kind && kind !== "spec" && kind !== "submission") {
+      return res.status(400).json({ error: "kind must be 'spec' or 'submission'." });
+    }
+
+    const isOwner = gig.client_id === req.user.id;
+    const isAssigned = gig.freelancer_id === req.user.id;
+
+    // Allow any authenticated freelancer to view spec files on open gigs (so they know what they're applying to)
+    const canSeeSpec = isOwner || isAssigned || (gig.status === "open" && req.user.role === "freelancer");
+    const canSeeSubmission = isOwner || isAssigned;
+
+    const kinds = [];
+    if (!kind || kind === "spec") {
+      if (!canSeeSpec) return res.status(403).json({ error: "Forbidden." });
+      kinds.push("spec");
+    }
+    if (!kind || kind === "submission") {
+      if (canSeeSubmission) kinds.push("submission");
+    }
+
+    if (kinds.length === 0) {
+      return res.status(200).json({ data: [] });
+    }
+
+    const result = await query(
+      `SELECT * FROM gig_attachments WHERE gig_id = $1 AND kind = ANY($2::text[]) ORDER BY created_at ASC`,
+      [req.params.id, kinds]
+    );
+
+    return res.status(200).json({ data: result.rows.map(mapAttachment) });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+// Delete an attachment (uploader only, before status moves past in_progress)
+router.delete("/:id/attachments/:attachmentId", auth, async (req, res, next) => {
+  try {
+    const gig = await findGig(req.params.id);
+    if (!gig) return res.status(404).json({ error: "Gig not found." });
+
+    const attachment = await query(
+      `SELECT * FROM gig_attachments WHERE id = $1 AND gig_id = $2`,
+      [req.params.attachmentId, req.params.id]
+    );
+    const row = attachment.rows[0];
+    if (!row) return res.status(404).json({ error: "Attachment not found." });
+    if (row.uploader_id !== req.user.id) return res.status(403).json({ error: "Only the uploader can remove this." });
+    if (gig.status === "closed" || gig.status === "cancelled") {
+      return res.status(400).json({ error: "Cannot remove attachments after the gig is closed." });
+    }
+
+    await query(`DELETE FROM gig_attachments WHERE id = $1`, [req.params.attachmentId]);
+    return res.status(200).json({ message: "Attachment removed." });
+  } catch (error) {
+    return next(error);
   }
 });
 

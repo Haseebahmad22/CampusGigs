@@ -2,64 +2,51 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { ArrowRight, Check, Coins, Zap, Crown } from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const fade = (delay = 0) => ({
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.6, delay, ease: [0.25, 0.1, 0.25, 1] },
-});
-
-const stagger = {
-  animate: { transition: { staggerChildren: 0.1, delayChildren: 0.2 } },
-};
-
-const plans = [
+const PLANS = [
   {
     name: "Starter",
-    icon: Coins,
     price: "Free",
-    priceNote: "to get started",
-    description: "Perfect for trying out the platform and posting your first gigs.",
-    color: "primary",
+    suffix: "to start",
+    description:
+      "Perfect for trying out the platform and posting your first gigs.",
+    cta: "Get started",
     featured: false,
-    tokens: "50 tokens",
     features: [
       "50 tokens on signup",
       "Post up to 3 active gigs",
       "Browse all freelancer profiles",
       "Basic proposal management",
-      "Review and rating system",
+      "Review & rating system",
     ],
   },
   {
     name: "Pro",
-    icon: Zap,
     price: "500",
-    priceNote: "tokens / semester",
-    description: "For active clients who hire regularly and want priority access.",
-    color: "primary",
+    suffix: "tokens / semester",
+    description:
+      "For active clients who hire regularly and want priority access.",
+    cta: "Upgrade to Pro",
     featured: true,
-    tokens: "500 tokens",
     features: [
       "500 tokens per semester",
       "Unlimited active gigs",
       "Priority listing in search",
       "Detailed proposal analytics",
-      "Review and rating system",
+      "Review & rating system",
       "Early access to new features",
     ],
   },
   {
     name: "Campus",
-    icon: Crown,
     price: "Custom",
-    priceNote: "for organizations",
-    description: "For student organizations, departments, and campus-wide programs.",
-    color: "accent",
+    suffix: "for organizations",
+    description:
+      "For student organizations, departments, and campus-wide programs.",
+    cta: "Contact us",
     featured: false,
-    tokens: "Custom allocation",
     features: [
       "Custom token allocation",
       "Unlimited active gigs",
@@ -71,196 +58,245 @@ const plans = [
   },
 ];
 
+const TOKEN_FACTS = [
+  {
+    title: "Clients spend tokens.",
+    body: "When you post a gig, you set a token reward. Tokens transfer to the freelancer once you confirm delivery.",
+  },
+  {
+    title: "Freelancers earn tokens.",
+    body: "Complete gigs to earn tokens. Your total earnings and job count are displayed on your public profile.",
+  },
+  {
+    title: "Tokens stay on-platform.",
+    body: "Tokens are an internal currency. They represent work value and build your campus reputation.",
+  },
+];
+
+const navLinks = [
+  { label: "How it works", href: "/how-it-works", active: false },
+  { label: "Pricing", href: "/pricing", active: true },
+];
+
 export default function PricingPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Navbar */}
-      <div className="fixed top-5 left-0 right-0 z-50 px-5 sm:px-7">
-        <nav
-          className="h-16 rounded-2xl flex items-center justify-between px-6 sm:px-7 gap-6"
-          style={{
-            background: "rgba(255,255,255,0.86)",
-            backdropFilter: "blur(10px)",
-            WebkitBackdropFilter: "blur(10px)",
-            border: "1px solid rgba(0,0,0,0.07)",
-            boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
-          }}
-        >
+      <nav className="sticky top-0 z-50 h-14 w-full border-b border-rule bg-background/95 backdrop-blur-[2px]">
+        <div className="mx-auto flex h-full max-w-6xl items-center justify-between gap-6 px-5 sm:px-8">
           <Link
             href="/"
-            className="text-[19px] text-foreground shrink-0 italic"
-            style={{ fontFamily: "var(--font-logo)" }}
+            className="font-serif italic text-[22px] leading-none text-foreground shrink-0"
           >
             CampusGigs
           </Link>
-          <div className="hidden md:flex items-center gap-8">
-            <Link href="/signin" className="text-[13.5px] text-muted hover:text-foreground transition-colors">Browse Gigs</Link>
-            <Link href="/how-it-works" className="text-[13.5px] text-muted hover:text-foreground transition-colors">How it Works</Link>
-            <Link href="/pricing" className="text-[13.5px] text-foreground font-medium">Pricing</Link>
-          </div>
-          <div className="flex items-center gap-4 shrink-0">
-            <Link href="/signin" className="text-[13.5px] text-muted hover:text-foreground transition-colors">Log in</Link>
-            <Link href="/signup" className="text-[13.5px] font-semibold bg-primary text-white px-5 py-2 rounded-md hover:bg-primary-dark transition-colors">Sign up</Link>
-          </div>
-        </nav>
-      </div>
-
-      <main className="max-w-none mx-auto px-6 sm:px-8 pt-36 sm:pt-44 pb-20">
-        {/* Header */}
-        <motion.div {...fade(0.1)} className="text-center mb-14">
-          <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-border bg-surface text-xs text-muted tracking-wide uppercase">
-            <Coins className="w-3 h-3 text-primary" />
-            Token pricing
-          </span>
-          <h1
-            className="mt-5 text-3xl sm:text-[2.8rem] leading-tight tracking-tight"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
-            Simple, transparent
-            <br />
-            <span className="text-primary">token-based pricing.</span>
-          </h1>
-          <p className="mt-4 text-base text-muted max-w-lg mx-auto">
-            CampusGigs runs on tokens — an internal currency designed for campus-scale transactions. No payment processors, no friction.
-          </p>
-        </motion.div>
-
-        {/* Plans */}
-        <motion.div
-          variants={stagger}
-          initial="initial"
-          whileInView="animate"
-          viewport={{ once: true, margin: "-40px" }}
-          className="grid md:grid-cols-3 gap-4 mb-20"
-        >
-          {plans.map((plan, i) => (
-            <motion.div
-              key={plan.name}
-              {...fade(i * 0.08)}
-              className={cn(
-                "relative rounded-xl border p-6 transition-all duration-200",
-                plan.featured
-                  ? "border-primary/30 bg-surface shadow-lg shadow-primary/[0.06] scale-[1.02]"
-                  : "border-border bg-surface hover:border-primary/15"
-              )}
-            >
-              {plan.featured && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span className="px-3 py-1 rounded-full bg-primary text-white text-[10px] font-semibold uppercase tracking-wider">
-                    Most popular
-                  </span>
-                </div>
-              )}
-
-              <div className="flex items-center gap-2.5 mb-4">
-                <div className={`w-9 h-9 rounded-lg bg-${plan.color}/8 border border-${plan.color}/15 flex items-center justify-center`}>
-                  <plan.icon className={`w-4 h-4 text-${plan.color}`} />
-                </div>
-                <h3 className="text-base font-semibold text-foreground">{plan.name}</h3>
-              </div>
-
-              <div className="mb-3">
-                <span className="text-3xl font-bold text-foreground">{plan.price}</span>
-                {plan.price !== "Free" && plan.price !== "Custom" && (
-                  <span className="text-xs text-muted ml-1">tokens</span>
-                )}
-                <p className="text-xs text-muted mt-0.5">{plan.priceNote}</p>
-              </div>
-
-              <p className="text-sm text-muted leading-relaxed mb-5">{plan.description}</p>
-
-              <div className="space-y-2.5 mb-6">
-                {plan.features.map((feature) => (
-                  <div key={feature} className="flex items-start gap-2">
-                    <Check className="w-3.5 h-3.5 text-success mt-0.5 shrink-0" />
-                    <span className="text-sm text-muted">{feature}</span>
-                  </div>
-                ))}
-              </div>
-
+          <div className="hidden md:flex items-center gap-6">
+            {navLinks.map((link) => (
               <Link
-                href="/signup"
-                className={cn(
-                  "block w-full text-center py-2.5 rounded-lg text-sm font-semibold transition-colors",
-                  plan.featured
-                    ? "bg-primary text-white hover:bg-primary-dark"
-                    : "border border-border text-foreground hover:bg-surface-elevated"
-                )}
+                key={link.label}
+                href={link.href}
+                className={`text-[14px] py-4 -mb-px border-b-2 transition-colors ${
+                  link.active
+                    ? "text-foreground border-primary"
+                    : "text-muted hover:text-foreground border-transparent"
+                }`}
               >
-                {plan.price === "Custom" ? "Contact us" : "Get started"}
+                {link.label}
               </Link>
-            </motion.div>
-          ))}
-        </motion.div>
-
-        {/* How tokens work */}
-        <motion.section
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          className="mb-20"
-        >
-          <h2
-            className="text-xl font-semibold text-foreground mb-6 text-center"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
-            How tokens work
-          </h2>
-          <div className="grid sm:grid-cols-3 gap-4">
-            {[
-              {
-                title: "Clients spend tokens",
-                desc: "When you post a gig, you set a token reward. Tokens transfer to the freelancer once you confirm delivery.",
-              },
-              {
-                title: "Freelancers earn tokens",
-                desc: "Complete gigs to earn tokens. Your total earnings and job count are displayed on your public profile.",
-              },
-              {
-                title: "Tokens stay on-platform",
-                desc: "Tokens are an internal currency for now. They represent work value and build your campus reputation.",
-              },
-            ].map((item) => (
-              <div
-                key={item.title}
-                className="rounded-xl border border-border bg-surface p-5"
-              >
-                <h3 className="text-sm font-semibold text-foreground mb-1">{item.title}</h3>
-                <p className="text-sm text-muted leading-relaxed">{item.desc}</p>
-              </div>
             ))}
           </div>
-        </motion.section>
-
-        {/* CTA */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          className="rounded-2xl border border-border bg-surface p-8 sm:p-10 text-center"
-        >
-          <h2 className="text-xl font-semibold text-foreground">Start with 50 free tokens</h2>
-          <p className="text-sm text-muted mt-1.5 max-w-sm mx-auto">
-            Every new account gets tokens to try the platform. No credit card required.
-          </p>
-          <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+          <div className="flex items-center gap-4">
+            <Link
+              href="/signin"
+              className="text-[14px] text-muted hover:text-foreground transition-colors"
+            >
+              Sign in
+            </Link>
             <Link
               href="/signup"
-              className="group flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-white font-semibold text-sm hover:bg-primary-dark transition-all"
+              className="text-[13px] font-medium bg-primary text-[#F7F4EC] px-4 py-2 rounded-md hover:bg-primary-dark transition-colors"
             >
-              Create free account <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+              Create account
             </Link>
           </div>
-        </motion.div>
+        </div>
+      </nav>
+
+      <main className="mx-auto max-w-6xl px-5 sm:px-8 pt-16 pb-24">
+        {/* Header */}
+        <section className="grid grid-cols-12 gap-6 items-end pb-16 border-b border-rule">
+          <div className="col-span-12 md:col-span-9">
+            <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-subtle">
+              Pricing · Token economy
+            </span>
+            <h1 className="mt-5 font-serif text-[3rem] sm:text-[4rem] leading-[1] tracking-tight text-foreground">
+              Simple, transparent
+              <br />
+              <em className="italic text-primary">token-based pricing.</em>
+            </h1>
+            <p className="mt-6 max-w-xl text-[16px] text-muted leading-relaxed">
+              CampusGigs runs on tokens — an internal currency designed for
+              campus-scale work. No payment processors, no hidden fees, no
+              subscriptions for freelancers.
+            </p>
+          </div>
+        </section>
+
+        {/* Plans table */}
+        <section className="pt-16">
+          <div className="grid grid-cols-1 md:grid-cols-3 md:divide-x md:divide-rule">
+            {PLANS.map((plan, i) => (
+              <motion.div
+                key={plan.name}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-60px" }}
+                transition={{
+                  type: "spring",
+                  stiffness: 260,
+                  damping: 28,
+                  delay: i * 0.07,
+                }}
+                className={cn(
+                  "relative px-0 md:px-8 py-8 first:md:pl-0 last:md:pr-0",
+                  plan.featured &&
+                    "md:bg-surface-elevated/40 border-l-2 border-l-accent"
+                )}
+              >
+                <div className="flex items-baseline gap-3 mb-1">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-subtle">
+                    {plan.name}
+                  </span>
+                  {plan.featured ? (
+                    <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-accent">
+                      Recommended
+                    </span>
+                  ) : null}
+                </div>
+
+                <div className="mt-3 flex items-baseline gap-2">
+                  <span className="font-serif tabular-nums text-6xl md:text-7xl text-foreground leading-none">
+                    {plan.price}
+                  </span>
+                </div>
+                <span className="mt-2 block font-mono text-[11px] uppercase tracking-[0.14em] text-subtle">
+                  {plan.suffix}
+                </span>
+
+                <p className="mt-6 text-[14px] text-muted leading-relaxed">
+                  {plan.description}
+                </p>
+
+                <ul className="mt-6 space-y-2.5">
+                  {plan.features.map((feature) => (
+                    <li
+                      key={feature}
+                      className="flex items-start gap-2 text-[14px]"
+                    >
+                      <Check className="w-3.5 h-3.5 text-primary mt-1 shrink-0" />
+                      <span className="text-foreground/85">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <Link
+                  href="/signup"
+                  className={cn(
+                    "mt-7 inline-flex w-full items-center justify-center px-5 py-3 rounded-md text-[14px] font-medium transition-colors",
+                    plan.featured
+                      ? "bg-primary text-[#F7F4EC] hover:bg-primary-dark"
+                      : "border border-rule-strong text-foreground hover:bg-surface-elevated"
+                  )}
+                >
+                  {plan.cta}
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        {/* How tokens work */}
+        <section className="border-t border-rule mt-16 pt-16">
+          <div className="mb-10 flex items-end justify-between gap-4 pb-3 border-b border-rule">
+            <div>
+              <span className="block font-mono text-[10px] uppercase tracking-[0.2em] text-subtle mb-1.5">
+                Mechanics
+              </span>
+              <h2 className="font-serif text-3xl text-foreground">
+                How tokens work.
+              </h2>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 md:divide-x md:divide-rule">
+            {TOKEN_FACTS.map((fact, i) => (
+              <motion.div
+                key={fact.title}
+                initial={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-40px" }}
+                transition={{
+                  type: "spring",
+                  stiffness: 260,
+                  damping: 28,
+                  delay: i * 0.06,
+                }}
+                className="px-0 md:px-8 first:md:pl-0 last:md:pr-0 py-6"
+              >
+                <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-subtle">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <h3 className="mt-3 font-serif text-2xl text-foreground">
+                  {fact.title}
+                </h3>
+                <p className="mt-3 text-[14px] text-muted leading-relaxed">
+                  {fact.body}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        {/* CTA */}
+        <section className="border-t border-rule mt-16 pt-16">
+          <div className="grid grid-cols-12 gap-6 items-center">
+            <div className="col-span-12 md:col-span-8">
+              <h2 className="font-serif text-3xl md:text-5xl tracking-tight text-foreground">
+                Start with 50 free tokens.
+              </h2>
+              <p className="mt-3 text-[15px] text-muted max-w-md">
+                Every new account gets tokens to try the platform. No credit
+                card, no commitment.
+              </p>
+            </div>
+            <div className="col-span-12 md:col-span-4 flex flex-wrap gap-3 md:justify-end">
+              <Link
+                href="/signup"
+                className="group inline-flex items-center gap-2 px-6 py-3 rounded-md bg-primary text-[#F7F4EC] font-medium text-[14px] hover:bg-primary-dark transition-colors"
+              >
+                Create account
+                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+              </Link>
+            </div>
+          </div>
+        </section>
       </main>
 
-      <footer className="py-6 text-center text-xs text-subtle border-t border-border/80">
-        <div className="flex items-center justify-center gap-6">
+      <footer className="border-t border-rule py-8">
+        <div className="mx-auto max-w-6xl px-5 sm:px-8 flex items-center justify-between gap-4 font-mono text-[11px] uppercase tracking-[0.16em] text-subtle">
           <span>&copy; {new Date().getFullYear()} CampusGigs</span>
-          <Link href="/how-it-works" className="hover:text-foreground transition-colors">How it Works</Link>
-          <Link href="/pricing" className="hover:text-foreground transition-colors">Pricing</Link>
+          <div className="flex items-center gap-6">
+            <Link
+              href="/how-it-works"
+              className="hover:text-foreground transition-colors"
+            >
+              How it works
+            </Link>
+            <Link
+              href="/pricing"
+              className="hover:text-foreground transition-colors"
+            >
+              Pricing
+            </Link>
+          </div>
         </div>
       </footer>
     </div>

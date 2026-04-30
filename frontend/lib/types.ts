@@ -94,6 +94,9 @@ export interface Gig {
   freelancerAvatar: string | null;
   proposalCount: number;
   pendingProposalCount: number;
+  categoryId: string | null;
+  categoryName: string | null;
+  categorySlug: string | null;
   createdAt: string;
   updatedAt: string;
   myProposal?: {

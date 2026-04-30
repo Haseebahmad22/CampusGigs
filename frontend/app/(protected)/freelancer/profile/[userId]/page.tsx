@@ -7,31 +7,27 @@ import {
   MapPin,
   GraduationCap,
   Star,
-  CheckCircle,
-  TrendingUp,
-  Clock,
   Globe,
-  Calendar,
-  Award,
   Briefcase,
-  Shield,
-  ChevronDown,
-  ChevronUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AppNavbar } from "@/components/layout/AppNavbar";
+import { Avatar } from "@/components/ui/avatar";
+import { SectionHeading } from "@/components/ui/section-heading";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { MetricTile } from "@/components/ui/metric-tile";
+import { BentoGrid, BentoCell } from "@/components/ui/bento-grid";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Stamp } from "@/components/ui/stamp";
 import type { FreelancerProfile, Review } from "@/lib/types";
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.05, delayChildren: 0.05 } },
-};
-const itemVariants = {
-  hidden: { opacity: 0, y: 8 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.25 } },
-};
-
-function StarRating({ rating, size = "sm" }: { rating: number; size?: "sm" | "md" }) {
+function StarRating({
+  rating,
+  size = "sm",
+}: {
+  rating: number;
+  size?: "sm" | "md";
+}) {
   const full = Math.floor(rating);
   const hasHalf = rating - full >= 0.25;
   const iconSize = size === "md" ? "w-4 h-4" : "w-3.5 h-3.5";
@@ -43,10 +39,10 @@ function StarRating({ rating, size = "sm" }: { rating: number; size?: "sm" | "md
           className={cn(
             iconSize,
             i < full
-              ? "text-warning fill-warning"
+              ? "text-accent fill-accent"
               : i === full && hasHalf
-                ? "text-warning fill-warning/50"
-                : "text-border fill-border"
+                ? "text-accent fill-accent/50"
+                : "text-rule"
           )}
         />
       ))}
@@ -55,26 +51,48 @@ function StarRating({ rating, size = "sm" }: { rating: number; size?: "sm" | "md
 }
 
 function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("en-US", { month: "short", year: "numeric" });
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    month: "short",
+    year: "numeric",
+  });
 }
 
 function formatReviewDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
+
+const availabilityLabel: Record<string, { label: string; dot: string }> = {
+  available: { label: "Available", dot: "bg-success" },
+  busy: { label: "Busy", dot: "bg-warning" },
+  away: { label: "Away", dot: "bg-muted" },
+  not_available: { label: "Unavailable", dot: "bg-error" },
+};
 
 export default function FreelancerPublicProfile() {
   const params = useParams();
   const [profile, setProfile] = useState<FreelancerProfile | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
-  const [activeGigs, setActiveGigs] = useState<{ id: string; title: string; tokenReward: number; status: string; createdAt: string }[]>([]);
+  const [activeGigs, setActiveGigs] = useState<
+    {
+      id: string;
+      title: string;
+      tokenReward: number;
+      status: string;
+      createdAt: string;
+    }[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [bioExpanded, setBioExpanded] = useState(false);
-  const [workTab, setWorkTab] = useState<"completed" | "in_progress">("completed");
 
   useEffect(() => {
     const loadData = async () => {
-      const userId = Array.isArray(params.userId) ? params.userId[0] : params.userId;
+      const userId = Array.isArray(params.userId)
+        ? params.userId[0]
+        : params.userId;
 
       if (!userId) {
         setError("Missing freelancer id.");
@@ -84,7 +102,8 @@ export default function FreelancerPublicProfile() {
 
       try {
         setLoading(true);
-        const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+        const apiBaseUrl =
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
         const [profileRes, reviewsRes, activeGigsRes] = await Promise.all([
           fetch(`${apiBaseUrl}/api/profile/${userId}`),
@@ -104,11 +123,12 @@ export default function FreelancerPublicProfile() {
         setProfile(profilePayload as FreelancerProfile);
 
         if (reviewsRes.ok && Array.isArray(reviewsPayload?.data)) {
-          const mappedReviews = reviewsPayload.data.map((review: Review) => ({
-            ...review,
-            gigTitle: review.gigTitle || "Completed Project",
-          }));
-          setReviews(mappedReviews);
+          setReviews(
+            reviewsPayload.data.map((review: Review) => ({
+              ...review,
+              gigTitle: review.gigTitle || "Completed project",
+            }))
+          );
         } else {
           setReviews([]);
         }
@@ -129,288 +149,307 @@ export default function FreelancerPublicProfile() {
   if (loading || !profile) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-          <p className="text-sm text-muted">{error || "Loading profile..."}</p>
+        <div className="font-mono text-[11px] uppercase tracking-[0.2em] text-subtle">
+          {error || "Loading…"}
         </div>
       </div>
     );
   }
 
-  const initials = profile.fullName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
   const memberSince = formatDate(profile.createdAt);
-  const bioIsLong = (profile.bio?.length || 0) > 300;
+  const availability =
+    availabilityLabel[profile.availability ?? "available"] ??
+    availabilityLabel.available;
+  const verified = profile.profileCompletionPct >= 80;
 
   return (
     <div className="min-h-screen bg-background">
       <AppNavbar />
 
-      <main className="max-w-none mx-auto px-5 pt-24 pb-16">
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="flex flex-col lg:flex-row gap-5"
+      <main className="mx-auto max-w-6xl px-5 sm:px-8 py-10 lg:py-14">
+        {/* Magazine cover header */}
+        <motion.section
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ type: "spring", stiffness: 260, damping: 28 }}
+          className="grid grid-cols-12 gap-6 items-start pb-10 border-b border-rule"
         >
-          {/* Left Sidebar */}
-          <motion.div variants={itemVariants} className="lg:w-[280px] shrink-0 space-y-4">
-            {/* Profile card */}
-            <div className="rounded-lg border border-border bg-surface overflow-hidden">
-              <div className="h-16 bg-linear-to-r from-primary/12 via-accent/8 to-secondary/12" />
-              <div className="px-5 pb-5 -mt-8 relative">
-                <div className="w-16 h-16 rounded-full border-[3px] border-surface overflow-hidden bg-linear-to-br from-primary/20 via-accent/20 to-secondary/20 shadow-lg mx-auto">
-                  {profile.avatarUrl ? (
-                    <img src={profile.avatarUrl} alt={profile.fullName} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <span className="text-xl font-bold text-foreground/70">{initials}</span>
-                    </div>
-                  )}
-                </div>
-                <div className="text-center mt-2.5">
-                  <div className="flex items-center justify-center gap-1.5">
-                    <h2 className="text-base font-bold text-foreground">{profile.fullName}</h2>
-                    {profile.profileCompletionPct >= 80 && <Shield className="w-3.5 h-3.5 text-secondary" />}
-                  </div>
-                  {profile.location && (
-                    <p className="text-xs text-muted mt-1 flex items-center justify-center gap-1">
-                      <MapPin className="w-3 h-3" />{profile.location}
-                    </p>
-                  )}
-                </div>
-                <div className="mt-3 flex items-center justify-center gap-2">
-                  <div className={cn("w-2 h-2 rounded-full", profile.availability === "available" && "bg-success animate-pulse", profile.availability === "busy" && "bg-warning", profile.availability === "away" && "bg-muted", profile.availability === "not_available" && "bg-error")} />
-                  <span className="text-xs text-muted capitalize">
-                    {profile.availability === "not_available" ? "Not Available" : profile.availability}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Info sidebar */}
-            <div className="rounded-lg border border-border bg-surface p-4 space-y-3.5">
-              {profile.hourlyRate && (
-                <>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted">Hourly Rate</span>
-                    <span className="text-sm font-bold text-primary">{profile.hourlyRate} tok/hr</span>
-                  </div>
-                  <div className="h-px bg-border" />
-                </>
-              )}
-              {profile.languages.length > 0 && (
-                <>
-                  <div className="h-px bg-border" />
-                  <div>
-                    <p className="text-sm font-medium text-foreground mb-1.5">Languages</p>
-                    {profile.languages.map((lang) => (
-                      <div key={lang} className="flex items-center gap-1.5 text-xs text-muted mb-0.5">
-                        <Globe className="w-3 h-3" />{lang}
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-              {profile.university && (
-                <>
-                  <div className="h-px bg-border" />
-                  <div>
-                    <p className="text-sm font-medium text-foreground mb-1.5">Education</p>
-                    <div className="flex items-start gap-2">
-                      <GraduationCap className="w-4 h-4 text-muted mt-0.5 shrink-0" />
-                      <div>
-                        <p className="text-xs font-medium text-foreground">{profile.university}</p>
-                        {profile.department && <p className="text-xs text-muted">{profile.department}</p>}
-                        {profile.semester && <p className="text-xs text-muted">{profile.semester}</p>}
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
-              <div className="h-px bg-border" />
-              <div className="flex items-center gap-1.5 text-xs text-muted">
-                <Calendar className="w-3.5 h-3.5" />Member since {memberSince}
-              </div>
-            </div>
-
-            {/* Achievements */}
-            <div className="rounded-lg border border-border bg-surface p-4 space-y-2.5">
-              <p className="text-sm font-medium text-foreground">Achievements</p>
-              {[
-                { icon: Award, label: "Top Rated", desc: "4.5+ avg", active: profile.averageRating >= 4.5, color: "text-warning", bg: "bg-warning/8" },
-                { icon: TrendingUp, label: "Rising Talent", desc: "10+ gigs", active: profile.totalJobsCompleted >= 10, color: "text-success", bg: "bg-success/8" },
-                { icon: CheckCircle, label: "Profile Complete", desc: "80%+", active: profile.profileCompletionPct >= 80, color: "text-secondary", bg: "bg-secondary/8" },
-              ].map((a) => (
-                <div key={a.label} className={cn("flex items-center gap-2 p-2 rounded-lg", a.active ? a.bg : "opacity-25")}>
-                  <a.icon className={cn("w-4 h-4", a.active ? a.color : "text-muted")} />
-                  <div>
-                    <p className="text-xs font-medium text-foreground">{a.label}</p>
-                    <p className="text-[10px] text-muted">{a.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* Main Content */}
-          <div className="flex-1 min-w-0 space-y-4">
-            {/* Title + Rate */}
-            <motion.div variants={itemVariants} className="rounded-lg border border-border bg-surface p-5">
-              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
-                <h1 className="text-xl font-bold text-foreground leading-tight">
-                  {profile.headline || "Freelancer"}
-                </h1>
-                {profile.hourlyRate && (
-                  <p className="text-xl font-bold text-primary shrink-0">
-                    {profile.hourlyRate} <span className="text-sm font-normal text-muted">tok/hr</span>
-                  </p>
+          <div className="col-span-12 md:col-span-9 min-w-0">
+            <div className="flex items-center gap-3">
+              <span
+                className={cn(
+                  "inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-subtle"
                 )}
-              </div>
-              <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 mt-3 pt-3 border-t border-border">
-                <div className="flex items-center gap-1.5">
-                  <Star className="w-4 h-4 text-warning fill-warning" />
-                  <span className="text-sm font-bold text-foreground">{profile.averageRating.toFixed(1)}</span>
-                  <span className="text-xs text-muted">({reviews.length} reviews)</span>
-                </div>
-                <div className="flex items-center gap-1.5 text-sm">
-                  <CheckCircle className="w-4 h-4 text-success" />
-                  <span className="font-semibold text-foreground">{profile.totalJobsCompleted}</span>
-                  <span className="text-muted">jobs</span>
-                </div>
-                <div className="flex items-center gap-1.5 text-sm">
-                  <TrendingUp className="w-4 h-4 text-accent" />
-                  <span className="font-semibold text-foreground">{profile.totalEarnings.toLocaleString()}</span>
-                  <span className="text-muted">tokens earned</span>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Bio */}
-            {profile.bio && (
-              <motion.div variants={itemVariants} className="rounded-lg border border-border bg-surface p-5">
-                <h2 className="text-sm font-bold text-foreground mb-2.5">About</h2>
-                <div className={cn("text-sm text-muted leading-relaxed whitespace-pre-line", !bioExpanded && bioIsLong && "line-clamp-4")}>
-                  {profile.bio}
-                </div>
-                {bioIsLong && (
-                  <button
-                    onClick={() => setBioExpanded(!bioExpanded)}
-                    className="mt-2 text-sm font-medium text-primary hover:text-primary-light transition-colors flex items-center gap-1"
-                  >
-                    {bioExpanded ? <>less <ChevronUp className="w-3.5 h-3.5" /></> : <>more <ChevronDown className="w-3.5 h-3.5" /></>}
-                  </button>
-                )}
-              </motion.div>
-            )}
-
-            {/* Work History */}
-            <motion.div variants={itemVariants} className="rounded-lg border border-border bg-surface overflow-hidden">
-              <div className="px-5 py-3.5 border-b border-border">
-                <h2 className="text-sm font-bold text-foreground">Work history</h2>
-                <div className="flex items-center gap-5 mt-2.5">
-                  <button
-                    onClick={() => setWorkTab("completed")}
-                    className={cn("text-sm font-medium pb-2 transition-colors", workTab === "completed" ? "text-foreground border-b-2 border-primary" : "text-muted hover:text-foreground")}
-                  >
-                    Completed ({reviews.length})
-                  </button>
-                  <button
-                    onClick={() => setWorkTab("in_progress")}
-                    className={cn("text-sm font-medium pb-2 transition-colors", workTab === "in_progress" ? "text-foreground border-b-2 border-primary" : "text-muted hover:text-foreground")}
-                  >
-                    In progress ({activeGigs.length})
-                  </button>
-                </div>
-              </div>
-              <div className="divide-y divide-border/50">
-                {workTab === "completed" ? (
-                  <>
-                    {reviews.map((review) => (
-                      <div key={review.id} className="px-5 py-4">
-                        <h3 className="text-sm font-medium text-primary">{review.gigTitle}</h3>
-                        <div className="flex items-center gap-2 mt-1.5">
-                          <StarRating rating={review.rating} size="sm" />
-                          <span className="text-sm font-bold text-foreground">{review.rating.toFixed(1)}</span>
-                          <span className="text-xs text-muted ml-1">{formatReviewDate(review.createdAt)}</span>
-                        </div>
-                        {review.comment && (
-                          <p className="text-sm text-muted mt-2 leading-relaxed">&ldquo;{review.comment}&rdquo;</p>
-                        )}
-                        <p className="text-xs text-muted mt-2">— {review.clientName}</p>
-                      </div>
-                    ))}
-                    {reviews.length === 0 && (
-                      <div className="px-5 py-10 text-center">
-                        <Briefcase className="w-7 h-7 text-muted/30 mx-auto mb-2" />
-                        <p className="text-sm text-muted">No completed jobs yet</p>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    {activeGigs.map((gig) => (
-                      <div key={gig.id} className="px-5 py-4">
-                        <h3 className="text-sm font-medium text-primary">{gig.title}</h3>
-                        <div className="flex items-center gap-3 mt-1.5">
-                          <div className="flex items-center gap-1.5">
-                            <Clock className="w-3.5 h-3.5 text-secondary" />
-                            <span className="text-xs text-muted capitalize">{gig.status === "pending_completion" ? "Submitted" : "In Progress"}</span>
-                          </div>
-                          <span className="text-xs font-semibold text-accent">{gig.tokenReward} tok</span>
-                        </div>
-                      </div>
-                    ))}
-                    {activeGigs.length === 0 && (
-                      <div className="px-5 py-10 text-center">
-                        <Clock className="w-7 h-7 text-muted/30 mx-auto mb-2" />
-                        <p className="text-sm text-muted">No active gigs right now</p>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            </motion.div>
-
-            {/* Skills */}
-            {profile.skills.length > 0 && (
-              <motion.div variants={itemVariants} className="rounded-lg border border-border bg-surface p-5">
-                <h2 className="text-sm font-bold text-foreground mb-3">Skills</h2>
-                <div className="flex flex-wrap gap-2">
-                  {profile.skills.map((skill) => (
-                    <span
-                      key={skill.skillId}
-                      className={cn(
-                        "px-3 py-1.5 rounded-full text-xs font-medium border",
-                        skill.proficiencyLevel === "expert"
-                          ? "bg-primary/8 border-primary/20 text-foreground"
-                          : "bg-surface-elevated border-border text-muted"
-                      )}
-                    >
-                      {skill.skillName}
-                    </span>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-
-            {/* Education */}
-            {profile.university && (
-              <motion.div variants={itemVariants} className="rounded-lg border border-border bg-surface p-5">
-                <h2 className="text-sm font-bold text-foreground mb-3">Education</h2>
-                <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-primary/8 border border-primary/15 flex items-center justify-center shrink-0">
-                    <GraduationCap className="w-4 h-4 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{profile.university}</p>
-                    {profile.department && <p className="text-xs text-muted mt-0.5">{profile.department}</p>}
-                    {profile.semester && <p className="text-xs text-muted mt-0.5">{profile.semester}</p>}
-                  </div>
-                </div>
-              </motion.div>
-            )}
+              >
+                <span className={cn("w-2 h-2 rounded-full", availability.dot)} />
+                {availability.label}
+              </span>
+              {profile.location ? (
+                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-subtle inline-flex items-center gap-1">
+                  <MapPin className="w-3 h-3" />
+                  {profile.location}
+                </span>
+              ) : null}
+            </div>
+            <h1 className="mt-4 font-serif text-[2.6rem] sm:text-[3.6rem] leading-[1] tracking-tight text-foreground">
+              {profile.fullName}
+            </h1>
+            <p className="mt-4 font-serif italic text-[18px] text-muted max-w-2xl">
+              {profile.headline || "Freelancer"}
+            </p>
+            <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 font-mono text-[11px] uppercase tracking-[0.14em] text-subtle">
+              <span className="inline-flex items-center gap-1.5 text-foreground">
+                <StarRating rating={profile.averageRating} />
+                <span className="tabular-nums">
+                  {profile.averageRating.toFixed(1)}
+                </span>
+                <span className="text-subtle">
+                  ({reviews.length} review{reviews.length !== 1 ? "s" : ""})
+                </span>
+              </span>
+              <span className="tabular-nums">
+                {profile.totalJobsCompleted} jobs
+              </span>
+              {profile.hourlyRate ? (
+                <span className="tabular-nums">
+                  {profile.hourlyRate} tok / hr
+                </span>
+              ) : null}
+              <span className="tabular-nums">Member since {memberSince}</span>
+            </div>
           </div>
-        </motion.div>
+          <div className="col-span-12 md:col-span-3 flex md:justify-end">
+            <Avatar
+              src={profile.avatarUrl}
+              fallback={profile.fullName}
+              size="xl"
+              variant="square"
+              verified={verified}
+            />
+          </div>
+        </motion.section>
+
+        {/* Tabs */}
+        <section className="mt-8">
+          <Tabs defaultValue="overview">
+            <TabsList>
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="reviews" count={reviews.length}>
+                Reviews
+              </TabsTrigger>
+              {activeGigs.length > 0 ? (
+                <TabsTrigger value="active" count={activeGigs.length}>
+                  In progress
+                </TabsTrigger>
+              ) : null}
+            </TabsList>
+
+            <TabsContent value="overview">
+              <BentoGrid>
+                {/* Bio */}
+                {profile.bio ? (
+                  <BentoCell colSpan={12} mdColSpan={8} rowSpan={2}>
+                    <div className="h-full rounded-md border border-border bg-surface p-6">
+                      <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-subtle">
+                        About
+                      </span>
+                      <p className="mt-3 font-serif text-[17px] text-foreground/90 leading-[1.7] whitespace-pre-line">
+                        {profile.bio}
+                      </p>
+                    </div>
+                  </BentoCell>
+                ) : (
+                  <BentoCell colSpan={12} mdColSpan={8} rowSpan={2}>
+                    <div className="h-full grid place-items-center rounded-md border border-dashed border-rule bg-surface-elevated/40 p-8">
+                      <div className="text-center">
+                        <Stamp variant="empty" tone="moss" size={140} />
+                        <p className="mt-2 font-serif text-base text-foreground">
+                          No bio yet.
+                        </p>
+                      </div>
+                    </div>
+                  </BentoCell>
+                )}
+
+                {/* Tokens earned */}
+                <BentoCell colSpan={6} mdColSpan={4}>
+                  <MetricTile
+                    label="Tokens earned"
+                    value={profile.totalEarnings}
+                    size="md"
+                    tone="accent"
+                    className="h-full"
+                  />
+                </BentoCell>
+
+                {/* Jobs */}
+                <BentoCell colSpan={6} mdColSpan={4}>
+                  <MetricTile
+                    label="Jobs completed"
+                    value={profile.totalJobsCompleted}
+                    size="md"
+                    className="h-full"
+                  />
+                </BentoCell>
+
+                {/* Skills */}
+                {profile.skills.length > 0 ? (
+                  <BentoCell colSpan={12} mdColSpan={8}>
+                    <div className="rounded-md border border-border bg-surface p-6">
+                      <SectionHeading
+                        title="Skills"
+                        kicker={`${profile.skills.length} total`}
+                        as="h3"
+                        className="border-0 pb-0"
+                      />
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {profile.skills.map((skill) => (
+                          <span
+                            key={skill.skillId}
+                            className={cn(
+                              "font-mono text-[11px] uppercase tracking-[0.12em] border rounded-sm px-2 py-1",
+                              skill.proficiencyLevel === "expert"
+                                ? "border-primary text-primary bg-primary/5"
+                                : "border-rule text-muted"
+                            )}
+                          >
+                            {skill.skillName}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </BentoCell>
+                ) : null}
+
+                {/* Education + Languages */}
+                <BentoCell colSpan={12} mdColSpan={4}>
+                  <div className="h-full rounded-md border border-border bg-surface p-6 space-y-5">
+                    {profile.university ? (
+                      <div>
+                        <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-subtle">
+                          Education
+                        </span>
+                        <div className="mt-2 flex items-start gap-2">
+                          <GraduationCap className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                          <div>
+                            <p className="font-serif text-base text-foreground">
+                              {profile.university}
+                            </p>
+                            {profile.department && (
+                              <p className="text-[13px] text-muted">
+                                {profile.department}
+                              </p>
+                            )}
+                            {profile.semester && (
+                              <p className="text-[13px] text-muted">
+                                {profile.semester}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {profile.languages.length > 0 ? (
+                      <div className={profile.university ? "pt-5 border-t border-rule" : ""}>
+                        <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-subtle">
+                          Languages
+                        </span>
+                        <div className="mt-2 space-y-1">
+                          {profile.languages.map((lang) => (
+                            <div
+                              key={lang}
+                              className="flex items-center gap-2 text-[13px] text-foreground/85"
+                            >
+                              <Globe className="w-3 h-3 text-muted" />
+                              {lang}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                </BentoCell>
+              </BentoGrid>
+            </TabsContent>
+
+            <TabsContent value="reviews">
+              <SectionHeading
+                title="Client reviews"
+                kicker={`${reviews.length} total`}
+              />
+              {reviews.length === 0 ? (
+                <div className="mt-8">
+                  <EmptyState
+                    title="No reviews yet."
+                    description="Completed gigs and client feedback will appear here."
+                  />
+                </div>
+              ) : (
+                <ul className="mt-6 divide-y divide-rule">
+                  {reviews.map((review) => (
+                    <li key={review.id} className="py-6">
+                      <div className="flex items-baseline justify-between gap-3 flex-wrap">
+                        <h3 className="font-serif text-lg text-foreground">
+                          {review.gigTitle}
+                        </h3>
+                        <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-subtle tabular-nums">
+                          {formatReviewDate(review.createdAt)}
+                        </span>
+                      </div>
+                      <div className="mt-2 flex items-center gap-2">
+                        <StarRating rating={review.rating} size="md" />
+                        <span className="font-serif tabular-nums text-base text-foreground">
+                          {review.rating.toFixed(1)}
+                        </span>
+                      </div>
+                      {review.comment && (
+                        <p className="mt-3 font-serif italic text-[15px] text-muted leading-relaxed border-l-2 border-rule pl-4 max-w-2xl">
+                          &ldquo;{review.comment}&rdquo;
+                        </p>
+                      )}
+                      <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.14em] text-subtle">
+                        — {review.clientName}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </TabsContent>
+
+            {activeGigs.length > 0 ? (
+              <TabsContent value="active">
+                <SectionHeading
+                  title="In progress"
+                  kicker={`${activeGigs.length} gig${activeGigs.length !== 1 ? "s" : ""}`}
+                />
+                <ul className="mt-6 divide-y divide-rule">
+                  {activeGigs.map((gig) => (
+                    <li key={gig.id} className="py-5">
+                      <div className="flex items-baseline justify-between gap-3 flex-wrap">
+                        <h3 className="font-serif text-lg text-foreground">
+                          {gig.title}
+                        </h3>
+                        <span className="font-mono tabular-nums text-[13px] text-accent">
+                          {gig.tokenReward} tok
+                        </span>
+                      </div>
+                      <span className="mt-1 inline-flex font-mono text-[10px] uppercase tracking-[0.14em] text-subtle">
+                        {gig.status === "pending_completion"
+                          ? "Submitted"
+                          : "In progress"}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
+                <div className="hidden">
+                  <Briefcase />
+                </div>
+              </TabsContent>
+            ) : null}
+          </Tabs>
+        </section>
       </main>
     </div>
   );

@@ -1,32 +1,59 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Plus, Briefcase, Users, Clock, CheckCircle, XCircle } from "lucide-react";
+import { Plus, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AppNavbar } from "@/components/layout/AppNavbar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { SkeletonRow } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { SectionHeading } from "@/components/ui/section-heading";
 import type { Gig, GigStatus } from "@/lib/types";
+
+type StatusFilter =
+  | "all"
+  | "open"
+  | "in_progress"
+  | "pending_completion"
+  | "closed";
+
+const FILTERS: {
+  id: StatusFilter;
+  label: string;
+  match: (g: Gig) => boolean;
+}[] = [
+  { id: "all", label: "All", match: () => true },
+  { id: "open", label: "Open", match: (g) => g.status === "open" },
+  {
+    id: "in_progress",
+    label: "Active",
+    match: (g) => g.status === "in_progress",
+  },
+  {
+    id: "pending_completion",
+    label: "Pending",
+    match: (g) => g.status === "pending_completion",
+  },
+  { id: "closed", label: "Completed", match: (g) => g.status === "closed" },
+];
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
-const statusConfig: Record<GigStatus, { label: string; variant: "primary" | "secondary" | "warning" | "success" | "error" }> = {
+const statusConfig: Record<
+  GigStatus,
+  {
+    label: string;
+    variant: "primary" | "secondary" | "warning" | "success" | "error";
+  }
+> = {
   open: { label: "Open", variant: "primary" },
   in_progress: { label: "In Progress", variant: "secondary" },
-  pending_completion: { label: "Pending Review", variant: "warning" },
+  pending_completion: { label: "Pending", variant: "warning" },
   closed: { label: "Completed", variant: "success" },
   cancelled: { label: "Cancelled", variant: "error" },
-};
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.05 } },
-};
-const itemVariants = {
-  hidden: { opacity: 0, y: 10 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.25 } },
 };
 
 export default function ClientGigsPage() {
@@ -34,10 +61,29 @@ export default function ClientGigsPage() {
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [filter, setFilter] = useState<StatusFilter>("all");
+
+  const filteredGigs = useMemo(() => {
+    const f = FILTERS.find((x) => x.id === filter);
+    return f ? gigs.filter(f.match) : gigs;
+  }, [gigs, filter]);
+
+  const filterCounts = useMemo(() => {
+    return FILTERS.reduce<Record<StatusFilter, number>>(
+      (acc, f) => {
+        acc[f.id] = gigs.filter(f.match).length;
+        return acc;
+      },
+      { all: 0, open: 0, in_progress: 0, pending_completion: 0, closed: 0 }
+    );
+  }, [gigs]);
 
   useEffect(() => {
     const token = localStorage.getItem("campusgigs_token");
-    if (!token) { router.replace("/signin"); return; }
+    if (!token) {
+      router.replace("/signin");
+      return;
+    }
 
     fetch(`${API}/api/gigs/mine`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -51,107 +97,160 @@ export default function ClientGigsPage() {
       .finally(() => setLoading(false));
   }, [router]);
 
-  const counts = {
-    open: gigs.filter((g) => g.status === "open").length,
-    active: gigs.filter((g) => ["in_progress", "pending_completion"].includes(g.status)).length,
-    closed: gigs.filter((g) => g.status === "closed").length,
-  };
-
   return (
     <div className="min-h-screen bg-background">
       <AppNavbar />
 
-      <main className="max-w-none mx-auto px-5 pt-24 pb-16">
-        <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
-          {/* Header */}
-          <motion.div variants={itemVariants} className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">My Gigs</h1>
-              <p className="text-sm text-muted mt-1">Manage your posted gigs</p>
-            </div>
-            <Button size="sm" onClick={() => router.push("/client/gigs/new")}>
-              <Plus className="w-4 h-4" />
-              Post Gig
-            </Button>
-          </motion.div>
+      <main className="mx-auto max-w-6xl px-5 sm:px-8 py-10 lg:py-14">
+        <motion.section
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ type: "spring", stiffness: 260, damping: 28 }}
+        >
+          <SectionHeading
+            title="My gigs"
+            kicker="Client area"
+            action={
+              <Button onClick={() => router.push("/client/gigs/new")} variant="accent">
+                <Plus className="w-4 h-4" />
+                Post a gig
+              </Button>
+            }
+          />
+        </motion.section>
 
-          {/* Stats */}
-          <motion.div variants={itemVariants} className="grid grid-cols-3 gap-3">
-            {[
-              { label: "Open", value: counts.open, icon: Briefcase, color: "text-primary", bg: "bg-primary/8", border: "border-primary/15" },
-              { label: "Active", value: counts.active, icon: Clock, color: "text-secondary", bg: "bg-secondary/8", border: "border-secondary/15" },
-              { label: "Completed", value: counts.closed, icon: CheckCircle, color: "text-success", bg: "bg-success/8", border: "border-success/15" },
-            ].map((s) => (
-              <div key={s.label} className={`p-4 rounded-lg border ${s.border} ${s.bg}`}>
-                <div className="flex items-center gap-2 mb-1">
-                  <s.icon className={`w-4 h-4 ${s.color}`} />
-                  <span className="text-xs text-muted">{s.label}</span>
-                </div>
-                <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
-              </div>
+        {error && (
+          <p className="mt-6 text-sm text-error">{error}</p>
+        )}
+
+        {/* Filter chips */}
+        {!loading && gigs.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.05 }}
+            className="mt-6 flex flex-wrap gap-2"
+          >
+            {FILTERS.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => setFilter(f.id)}
+                className={cn(
+                  "inline-flex items-center gap-2 rounded-sm border px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.14em] transition-colors",
+                  filter === f.id
+                    ? "border-primary text-primary bg-primary/5"
+                    : "border-rule text-muted hover:text-foreground hover:border-rule-strong"
+                )}
+              >
+                {f.label}
+                <span className="tabular-nums opacity-70">
+                  {String(filterCounts[f.id]).padStart(2, "0")}
+                </span>
+              </button>
             ))}
           </motion.div>
+        )}
 
-          {/* Error */}
-          {error && <p className="text-sm text-error">{error}</p>}
+        {/* Loading */}
+        {loading && (
+          <div className="mt-6 space-y-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <SkeletonRow key={i} />
+            ))}
+          </div>
+        )}
 
-          {/* Loading */}
-          {loading && (
-            <div className="py-16 flex justify-center">
-              <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-            </div>
-          )}
+        {/* Empty */}
+        {!loading && gigs.length === 0 && (
+          <div className="mt-8">
+            <EmptyState
+              title="No gigs yet."
+              description="Post your first gig to find campus talent."
+              action={
+                <Button
+                  onClick={() => router.push("/client/gigs/new")}
+                  variant="accent"
+                >
+                  <Plus className="w-4 h-4" /> Post a gig
+                </Button>
+              }
+            />
+          </div>
+        )}
 
-          {/* Empty */}
-          {!loading && gigs.length === 0 && (
-            <motion.div variants={itemVariants} className="py-16 text-center">
-              <Briefcase className="w-10 h-10 text-muted/30 mx-auto mb-3" />
-              <p className="text-lg font-semibold text-foreground">No gigs yet</p>
-              <p className="text-sm text-muted mt-1 mb-4">Post your first gig to find talent</p>
-              <Button size="sm" onClick={() => router.push("/client/gigs/new")}>
-                <Plus className="w-4 h-4" /> Post Gig
-              </Button>
-            </motion.div>
-          )}
+        {!loading && gigs.length > 0 && filteredGigs.length === 0 && (
+          <div className="mt-8">
+            <EmptyState
+              title="Nothing in this filter."
+              description="Try a different status, or clear the filter to see everything."
+            />
+          </div>
+        )}
 
-          {/* Gig list */}
-          {!loading && gigs.length > 0 && (
-            <motion.div variants={itemVariants} className="rounded-lg border border-border bg-surface overflow-hidden">
-              {gigs.map((gig, i) => {
-                const cfg = statusConfig[gig.status];
-                return (
-                  <div
-                    key={gig.id}
-                    onClick={() => router.push(`/client/gigs/${gig.id}`)}
-                    className={cn(
-                      "flex items-center justify-between px-5 py-4 hover:bg-surface-elevated transition-colors cursor-pointer",
-                      i < gigs.length - 1 && "border-b border-border/60"
-                    )}
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-foreground truncate">{gig.title}</p>
-                      <div className="flex items-center gap-3 mt-1 text-xs text-muted">
-                        {gig.freelancerName ? (
-                          <span>Assigned to {gig.freelancerName}</span>
-                        ) : (
-                          <span className="flex items-center gap-1">
-                            <Users className="w-3 h-3" />
-                            {gig.pendingProposalCount} proposal{gig.pendingProposalCount !== 1 ? "s" : ""}
-                          </span>
-                        )}
-                        <span>{new Date(gig.createdAt).toLocaleDateString()}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 shrink-0 ml-4">
-                      <span className="text-sm font-bold text-accent">{gig.tokenReward} tok</span>
-                      <Badge variant={cfg.variant} size="sm">{cfg.label}</Badge>
+        {/* Newsprint table */}
+        {!loading && filteredGigs.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.1 }}
+            className="mt-8 border-t border-rule"
+          >
+            {filteredGigs.map((gig) => {
+              const cfg = statusConfig[gig.status];
+              return (
+                <motion.button
+                  key={gig.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 260,
+                    damping: 28,
+                  }}
+                  onClick={() => router.push(`/client/gigs/${gig.id}`)}
+                  className="w-full text-left grid grid-cols-12 gap-4 items-center py-5 border-b border-rule hover:bg-surface-elevated transition-colors px-2 -mx-2 rounded-sm"
+                >
+                  <div className="col-span-12 md:col-span-7 min-w-0">
+                    <p className="font-serif text-xl text-foreground truncate">
+                      {gig.title}
+                    </p>
+                    <div className="mt-1 flex items-center gap-4 font-mono text-[11px] uppercase tracking-[0.12em] text-subtle">
+                      {gig.freelancerName ? (
+                        <span>Assigned · {gig.freelancerName}</span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1">
+                          <Users className="w-3 h-3" />
+                          {gig.pendingProposalCount} proposal
+                          {gig.pendingProposalCount !== 1 ? "s" : ""}
+                        </span>
+                      )}
+                      <span className="tabular-nums">
+                        {new Date(gig.createdAt).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </span>
                     </div>
                   </div>
-                );
-              })}
-            </motion.div>
-          )}
-        </motion.div>
+                  <div className="col-span-6 md:col-span-3 text-left md:text-right">
+                    <span className="font-serif tabular-nums text-2xl text-accent">
+                      {gig.tokenReward}
+                    </span>
+                    <span className="ml-2 font-mono text-[10px] uppercase tracking-[0.16em] text-subtle">
+                      tokens
+                    </span>
+                  </div>
+                  <div className="col-span-6 md:col-span-2 text-right">
+                    <Badge variant={cfg.variant} size="sm">
+                      {cfg.label}
+                    </Badge>
+                  </div>
+                </motion.button>
+              );
+            })}
+          </motion.div>
+        )}
       </main>
     </div>
   );
