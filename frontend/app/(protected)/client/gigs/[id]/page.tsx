@@ -11,7 +11,6 @@ import {
   Pencil,
   Trash2,
   MessageSquare,
-  Inbox,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AppNavbar } from "@/components/layout/AppNavbar";
@@ -681,9 +680,6 @@ export default function ClientGigDetailPage() {
                     </ul>
                   )}
 
-                  <div className="hidden">
-                    <Inbox />
-                  </div>
                 </TabsContent>
               ) : null}
 

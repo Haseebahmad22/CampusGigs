@@ -11,6 +11,7 @@ const messageRoutes = require("./routes/messages");
 const notificationRoutes = require("./routes/notifications");
 const reviewRoutes = require("./routes/reviews");
 const tokenRoutes = require("./routes/tokens");
+const uploadRoutes = require("./routes/upload");
 const errorHandler = require("./middleware/error-handler");
 const { query } = require("./db/pool");
 
@@ -42,6 +43,7 @@ app.use("/api/gigs/:gigId/messages", messageRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/tokens", tokenRoutes);
+app.use("/api/upload", uploadRoutes);
 
 app.use(errorHandler);
 

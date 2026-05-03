@@ -10,7 +10,6 @@ import {
   Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/toaster";
 import { Button } from "@/components/ui/button";
 
@@ -95,33 +94,34 @@ export function FileDropzone({
       setUploading((prev) => [...prev, tempKey]);
 
       try {
-        const supabase = createClient();
-        const ext = file.name.split(".").pop() || "bin";
+        const token = localStorage.getItem("campusgigs_token");
         const folder = kind === "spec" ? "gigs" : "submissions";
-        const path = `${folder}/${gigId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const prefix = `${folder}/${gigId}`;
 
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from("assets")
-          .upload(path, file, { upsert: false, contentType: file.type });
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("prefix", prefix);
 
-        if (uploadError) {
-          toast.error("Upload failed", uploadError.message);
+        const uploadRes = await fetch(`${API}/api/upload`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+
+        const uploadJson = await uploadRes.json();
+        if (!uploadRes.ok) {
+          toast.error("Upload failed", uploadJson.error || "Please try again.");
           return;
         }
 
-        const {
-          data: { publicUrl },
-        } = supabase.storage.from("assets").getPublicUrl(uploadData.path);
-
-        const token = localStorage.getItem("campusgigs_token");
-        const response = await fetch(`${API}/api/gigs/${gigId}/attachments`, {
+        const metaRes = await fetch(`${API}/api/gigs/${gigId}/attachments`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            fileUrl: publicUrl,
+            fileUrl: uploadJson.publicUrl,
             fileName: file.name,
             fileSizeBytes: file.size,
             mimeType: file.type,
@@ -129,17 +129,13 @@ export function FileDropzone({
           }),
         });
 
-        const json = await response.json();
-        if (!response.ok) {
-          toast.error(
-            "Could not save attachment",
-            json.error || "Please try again."
-          );
-          await supabase.storage.from("assets").remove([uploadData.path]);
+        const metaJson = await metaRes.json();
+        if (!metaRes.ok) {
+          toast.error("Could not save attachment", metaJson.error || "Please try again.");
           return;
         }
 
-        onChange([...attachments, json]);
+        onChange([...attachments, metaJson]);
         toast.success("File uploaded", file.name);
       } catch (err) {
         toast.error(
@@ -272,6 +268,7 @@ export function FileDropzone({
       ) : null}
 
       {attachments.length > 0 ? (
+        <div className="max-h-60 overflow-y-auto">
         <ul className="space-y-2">
           {attachments.map((a) => {
             const Icon = iconFor(a.mimeType);
@@ -315,6 +312,7 @@ export function FileDropzone({
             );
           })}
         </ul>
+        </div>
       ) : null}
     </div>
   );

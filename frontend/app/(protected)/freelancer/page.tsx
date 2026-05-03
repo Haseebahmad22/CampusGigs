@@ -61,28 +61,38 @@ export default function FreelancerDashboard() {
     const token = localStorage.getItem("campusgigs_token");
     if (!token) return;
 
+    // Phase 1: profile + proposals — drives the metrics tiles, load first
     Promise.all([
       fetch(`${API}/api/gigs/my-proposals`, {
         headers: { Authorization: `Bearer ${token}` },
-      }).then((r) => r.json()),
-      fetch(`${API}/api/gigs?limit=5`).then((r) => r.json()),
-      fetch(`${API}/api/notifications`, {
-        headers: { Authorization: `Bearer ${token}` },
-      }).then((r) => r.json()),
+      }).then((r) => r.json()).catch(() => null),
       userId
         ? fetch(`${API}/api/freelancers/${userId}`).then((r) =>
             r.ok ? r.json() : null
-          )
+          ).catch(() => null)
         : Promise.resolve(null),
-    ])
-      .then(([proposalsData, gigsData, notifData, profileData]) => {
-        if (Array.isArray(proposalsData?.data)) setMyGigs(proposalsData.data);
+    ]).then(([proposalsData, profileData]) => {
+      if (Array.isArray(proposalsData?.data)) setMyGigs(proposalsData.data);
+      if (profileData) setProfile(profileData);
+      setLoading(false); // unlock the UI as soon as core data is ready
+    });
+
+    // Phase 2: open gigs + notifications — secondary sections, load independently
+    fetch(`${API}/api/gigs?limit=5`)
+      .then((r) => r.json())
+      .then((gigsData) => {
         if (Array.isArray(gigsData?.data)) setOpenGigs(gigsData.data);
-        if (Array.isArray(notifData?.data)) setInbox(notifData.data.slice(0, 3));
-        if (profileData) setProfile(profileData);
       })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+      .catch(() => {});
+
+    fetch(`${API}/api/notifications`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((notifData) => {
+        if (Array.isArray(notifData?.data)) setInbox(notifData.data.slice(0, 3));
+      })
+      .catch(() => {});
   }, []);
 
   const firstName = userName.split(" ")[0];

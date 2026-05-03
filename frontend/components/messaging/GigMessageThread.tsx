@@ -111,7 +111,7 @@ export function GigMessageThread({
   return (
     <div
       className={cn(
-        "flex h-[480px] flex-col overflow-hidden rounded-md border border-border bg-surface",
+        "flex h-[320px] md:h-[480px] flex-col overflow-hidden rounded-md border border-border bg-surface",
         className
       )}
     >

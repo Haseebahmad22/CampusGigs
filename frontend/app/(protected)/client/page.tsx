@@ -66,24 +66,26 @@ export default function ClientDashboard() {
     const token = localStorage.getItem("campusgigs_token");
     if (!token) return;
 
-    Promise.all([
-      fetch(`${API}/api/gigs/mine`, {
-        headers: { Authorization: `Bearer ${token}` },
+    // Phase 1: gigs — drives metrics, load first
+    fetch(`${API}/api/gigs/mine`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data?.data)) setGigs(data.data);
       })
-        .then((r) => r.json())
-        .then((data) => {
-          if (Array.isArray(data?.data)) setGigs(data.data);
-        })
-        .catch(() => {}),
-      fetch(`${API}/api/notifications`, {
-        headers: { Authorization: `Bearer ${token}` },
+      .catch(() => {})
+      .finally(() => setLoading(false));
+
+    // Phase 2: notifications — secondary, load independently
+    fetch(`${API}/api/notifications`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data?.data)) setInbox(data.data.slice(0, 3));
       })
-        .then((r) => r.json())
-        .then((data) => {
-          if (Array.isArray(data?.data)) setInbox(data.data.slice(0, 3));
-        })
-        .catch(() => {}),
-    ]).finally(() => setLoading(false));
+      .catch(() => {});
   }, []);
 
   const firstName = userName.split(" ")[0];

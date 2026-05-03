@@ -1,4 +1,17 @@
 function mapProfileRowToResponse(row, skills = []) {
+  const profileCompletionPct = calculateProfileCompletion({
+    fullName: row.full_name,
+    headline: row.headline,
+    bio: row.bio,
+    hourlyRate: row.hourly_rate,
+    avatarUrl: row.avatar_url,
+    location: row.location,
+    university: row.university,
+    department: row.department,
+    semester: row.semester,
+    languages: row.languages || [],
+  });
+
   return {
     id: row.profile_id,
     userId: row.user_id,
@@ -17,10 +30,7 @@ function mapProfileRowToResponse(row, skills = []) {
     totalEarnings: row.total_earnings !== null ? Number(row.total_earnings) : 0,
     totalJobsCompleted: row.total_jobs_completed || 0,
     averageRating: row.average_rating !== null ? Number(row.average_rating) : 0,
-    profileCompletionPct:
-      row.profile_completion_pct !== null && row.profile_completion_pct !== undefined
-        ? Number(row.profile_completion_pct)
-        : 0,
+    profileCompletionPct,
     skills,
     createdAt: row.profile_created_at || row.user_created_at,
     updatedAt: row.profile_updated_at || row.user_updated_at,

@@ -260,7 +260,7 @@ export function SkillsSelector({
           </div>
 
           {searchQuery.length >= 2 && (
-            <div className="rounded-md border border-rule bg-surface overflow-hidden max-h-72 overflow-y-auto">
+            <div className="mt-2 rounded-md border border-rule bg-surface overflow-hidden max-h-72 overflow-y-auto">
               {searchResults.length === 0 ? (
                 <div className="px-4 py-8 text-center text-sm text-muted">
                   No skills found for &ldquo;{searchQuery}&rdquo;
@@ -320,7 +320,7 @@ export function SkillsSelector({
 
       {/* Browse categories mode */}
       {activeTab === "browse" && (
-        <div>
+        <div className="overflow-y-auto max-h-[420px] pr-1">
           {SKILL_CATEGORIES.map((category) => {
             const isExpanded = expandedCategories.has(category.id);
             const selectedInCategory = category.skills.filter((s) =>

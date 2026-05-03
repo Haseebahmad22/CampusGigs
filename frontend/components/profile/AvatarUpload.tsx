@@ -4,7 +4,8 @@ import { useState, useRef, useCallback } from "react";
 import Image from "next/image";
 import { Camera, X, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { createClient } from "@/lib/supabase/client";
+
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 interface AvatarUploadProps {
   currentUrl: string | null;
@@ -54,31 +55,35 @@ export function AvatarUpload({
 
       setUploading(true);
       try {
-        const supabase = createClient();
+        const token =
+          typeof window !== "undefined"
+            ? localStorage.getItem("campusgigs_token")
+            : null;
         const userId =
           typeof window !== "undefined"
-            ? JSON.parse(localStorage.getItem("campusgigs_user") || "{}").id ||
-              "demo"
+            ? JSON.parse(localStorage.getItem("campusgigs_user") || "{}").id || "demo"
             : "demo";
-        const ext = file.name.split(".").pop();
-        const fileName = `avatars/${userId}/${Date.now()}.${ext}`;
 
-        const { data, error } = await supabase.storage
-          .from("assets")
-          .upload(fileName, file, { upsert: true });
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("prefix", `avatars/${userId}`);
 
-        if (error) {
-          console.error("Upload error:", error);
-          onUpload(preview || "");
+        const res = await fetch(`${API}/api/upload`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+
+        const json = await res.json();
+        if (!res.ok) {
+          console.error("Avatar upload error:", json.error);
+          if (preview) onUpload(preview);
           return;
         }
 
-        const {
-          data: { publicUrl },
-        } = supabase.storage.from("assets").getPublicUrl(data.path);
-
-        onUpload(publicUrl);
-      } catch {
+        onUpload(json.publicUrl);
+      } catch (err) {
+        console.error("Avatar upload error:", err);
         if (preview) onUpload(preview);
       } finally {
         setUploading(false);

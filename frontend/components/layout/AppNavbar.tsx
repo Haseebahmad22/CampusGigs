@@ -94,6 +94,7 @@ export function AppNavbar() {
         { label: "Dashboard", href: "/freelancer" },
         { label: "Browse gigs", href: "/freelancer/gigs" },
         { label: "My gigs", href: "/freelancer/my-gigs" },
+        { label: "Profile", href: "/freelancer/profile/edit" },
       ]
     : [
         { label: "Dashboard", href: "/client" },
@@ -181,7 +182,7 @@ export function AppNavbar() {
                     className="fixed inset-0 z-40"
                     onClick={() => setShowNotifs(false)}
                   />
-                  <div className="absolute right-0 top-full mt-2 w-80 max-h-80 overflow-y-auto rounded-md border border-rule-strong bg-surface shadow-[0_2px_0_0_rgba(196,187,161,0.5)] z-50">
+                  <div className="absolute right-0 top-full mt-2 w-72 max-w-[calc(100vw-1rem)] max-h-80 overflow-y-auto rounded-md border border-rule-strong bg-surface shadow-[0_2px_0_0_rgba(196,187,161,0.5)] z-50">
                     <div className="px-4 py-2.5 border-b border-rule">
                       <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-subtle">
                         Notifications

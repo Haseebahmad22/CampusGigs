@@ -427,7 +427,7 @@ export default function NewGigPage() {
             </section>
 
             {/* Sticky action bar */}
-            <div className="sticky bottom-0 -mx-5 sm:-mx-8 px-5 sm:px-8 py-4 bg-background/95 backdrop-blur-[2px] border-t border-rule flex items-center justify-between gap-3">
+            <div className="sticky bottom-0 z-40 -mx-5 sm:-mx-8 px-5 sm:px-8 py-4 bg-background/95 backdrop-blur-[2px] border-t border-rule flex items-center justify-between gap-3">
               <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-subtle">
                 {canSubmit ? "Ready" : "Draft"}
               </span>

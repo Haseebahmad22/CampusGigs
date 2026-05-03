@@ -54,6 +54,7 @@ export function Dialog({
         className={cn(
           "relative w-full max-w-md rounded-md border border-rule-strong bg-surface p-6",
           "shadow-[0_2px_0_0_rgba(196,187,161,0.5)]",
+          "max-h-[90vh] overflow-y-auto",
           className
         )}
       >

@@ -144,12 +144,13 @@ router.put("/me", auth, async (req, res, next) => {
     if (req.user.role === "freelancer") {
       await ensureFreelancerProfile(req.user.id);
 
+      const currentRow = await getProfileRowByUserId(req.user.id);
       const completion = calculateProfileCompletion({
         fullName,
         headline,
         bio,
         hourlyRate,
-        avatarUrl: null,
+        avatarUrl: currentRow?.avatar_url || null,
         location,
         university,
         department,
@@ -211,7 +212,25 @@ router.post("/me/avatar", auth, requireRole("freelancer"), async (req, res, next
       req.user.id,
     ]);
 
-    return res.status(200).json({ message: "Avatar updated successfully.", avatarUrl });
+    const updatedRow = await getProfileRowByUserId(req.user.id);
+    const completion = calculateProfileCompletion({
+      fullName: updatedRow.full_name,
+      headline: updatedRow.headline,
+      bio: updatedRow.bio,
+      hourlyRate: updatedRow.hourly_rate,
+      avatarUrl,
+      location: updatedRow.location,
+      university: updatedRow.university,
+      department: updatedRow.department,
+      semester: updatedRow.semester,
+      languages: updatedRow.languages || [],
+    });
+    await query(
+      "UPDATE freelancer_profiles SET profile_completion_pct = $1 WHERE user_id = $2",
+      [completion, req.user.id]
+    );
+
+    return res.status(200).json({ message: "Avatar updated successfully.", avatarUrl, profileCompletionPct: completion });
   } catch (error) {
     return next(error);
   }
@@ -222,7 +241,25 @@ router.delete("/me/avatar", auth, requireRole("freelancer"), async (req, res, ne
     await ensureFreelancerProfile(req.user.id);
     await query("UPDATE freelancer_profiles SET avatar_url = NULL WHERE user_id = $1", [req.user.id]);
 
-    return res.status(200).json({ message: "Avatar removed successfully." });
+    const updatedRow = await getProfileRowByUserId(req.user.id);
+    const completion = calculateProfileCompletion({
+      fullName: updatedRow.full_name,
+      headline: updatedRow.headline,
+      bio: updatedRow.bio,
+      hourlyRate: updatedRow.hourly_rate,
+      avatarUrl: null,
+      location: updatedRow.location,
+      university: updatedRow.university,
+      department: updatedRow.department,
+      semester: updatedRow.semester,
+      languages: updatedRow.languages || [],
+    });
+    await query(
+      "UPDATE freelancer_profiles SET profile_completion_pct = $1 WHERE user_id = $2",
+      [completion, req.user.id]
+    );
+
+    return res.status(200).json({ message: "Avatar removed successfully.", profileCompletionPct: completion });
   } catch (error) {
     return next(error);
   }

@@ -8,7 +8,6 @@ import {
   GraduationCap,
   Star,
   Globe,
-  Briefcase,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AppNavbar } from "@/components/layout/AppNavbar";
@@ -443,9 +442,6 @@ export default function FreelancerPublicProfile() {
                   ))}
                 </ul>
 
-                <div className="hidden">
-                  <Briefcase />
-                </div>
               </TabsContent>
             ) : null}
           </Tabs>

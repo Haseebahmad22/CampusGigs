@@ -59,7 +59,7 @@ export function TabsList({ children, className, ...props }: TabsListProps) {
     <div
       role="tablist"
       className={cn(
-        "flex items-center gap-1 border-b border-rule overflow-x-auto",
+        "flex items-center gap-1 border-b border-rule overflow-x-auto overflow-y-hidden",
         className
       )}
       {...props}
@@ -128,7 +128,7 @@ export function TabsContent({
   const { value } = useTabs();
   if (value !== contentValue) return null;
   return (
-    <div role="tabpanel" className={cn("pt-6", className)} {...props}>
+    <div role="tabpanel" className={cn("py-6", className)} {...props}>
       {children}
     </div>
   );

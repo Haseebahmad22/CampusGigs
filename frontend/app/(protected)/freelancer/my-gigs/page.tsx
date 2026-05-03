@@ -87,10 +87,17 @@ function Column({
             const pb = proposalBadge[item.proposal.status];
             return (
               <li key={item.proposal.id}>
-                <button
-                  type="button"
+                <div
+                  role="button"
+                  tabIndex={0}
                   onClick={() => router.push(`/freelancer/gigs/${item.id}`)}
-                  className="group w-full text-left rounded-md border border-border bg-surface p-4 hover:bg-surface-elevated hover:border-rule-strong transition-colors"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      router.push(`/freelancer/gigs/${item.id}`);
+                    }
+                  }}
+                  className="group w-full text-left rounded-md border border-border bg-surface p-4 hover:bg-surface-elevated hover:border-rule-strong transition-colors cursor-pointer"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <p className="font-serif text-base text-foreground line-clamp-2 group-hover:text-primary transition-colors">
@@ -130,7 +137,7 @@ function Column({
                       {renderRight(item)}
                     </div>
                   ) : null}
-                </button>
+                </div>
               </li>
             );
           })}
